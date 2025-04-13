@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cuestionario de Factores de Riesgo Psicosocial en el Trabajo</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome para íconos -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="css/psicosocial-trabajo.css">
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top shadow-sm">
+    <div class="container">
+      <a class="navbar-brand" href="../index.html">
+        <i class="fas fa-shield-alt me-2"></i>Cuestionario SST
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="./empresa.html">
+              <i class="fas fa-building me-1"></i>Datos de Empresa
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="./formulario.html">
+              <i class="fas fa-clipboard-list me-1"></i>Formulario
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-5 pt-4">
+    <div id="loginSection">
+      <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+          <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+              <h2 class="text-center mb-0">Acceso al Cuestionario</h2>
+            </div>
+            <div class="card-body">
+              <form id="loginForm">
+                <div class="mb-3">
+                  <label for="nombre-empresa" class="form-label">Nombre de la empresa:</label>
+                  <input type="text" class="form-control" id="nombre-empresa" name="nombre-empresa" required>
+                </div>
+                <div class="mb-3">
+                  <label for="clave" class="form-label">Clave:</label>
+                  <input type="text" class="form-control" id="clave" name="clave" required>
+                </div>
+                <div class="d-grid">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt me-2"></i>Ingresar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="cuestionarioSection" style="display: none;">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Factores de Riesgo Psicosocial en el Trabajo</h1>
+        <div class="badge bg-primary fs-6" id="contador"></div>
+      </div>
+
+      <form id="cuestionarioForm">
+        <input type="hidden" id="empresaId" name="empresaId" value="">
+        
+        <!-- Nav tabs -->
+        <ul class="nav nav-tabs mb-4" id="questionnaireTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="condiciones-tab" data-bs-toggle="tab" data-bs-target="#condiciones" type="button" role="tab">
+              <i class="fas fa-hard-hat me-1"></i>Condiciones
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="actividades-tab" data-bs-toggle="tab" data-bs-target="#actividades" type="button" role="tab">
+              <i class="fas fa-tasks me-1"></i>Actividades
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tiempo-tab" data-bs-toggle="tab" data-bs-target="#tiempo" type="button" role="tab">
+              <i class="fas fa-clock me-1"></i>Tiempo
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="decisiones-tab" data-bs-toggle="tab" data-bs-target="#decisiones" type="button" role="tab">
+              <i class="fas fa-check-circle me-1"></i>Decisiones
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="capacitacion-tab" data-bs-toggle="tab" data-bs-target="#capacitacion" type="button" role="tab">
+              <i class="fas fa-graduation-cap me-1"></i>Capacitación
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="relaciones-tab" data-bs-toggle="tab" data-bs-target="#relaciones" type="button" role="tab">
+              <i class="fas fa-users me-1"></i>Relaciones
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="clientes-tab" data-bs-toggle="tab" data-bs-target="#clientes" type="button" role="tab">
+              <i class="fas fa-user-friends me-1"></i>Clientes
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="supervision-tab" data-bs-toggle="tab" data-bs-target="#supervision" type="button" role="tab">
+              <i class="fas fa-clipboard-check me-1"></i>Supervisión
+            </button>
+          </li>
+        </ul>
+
+        <!-- Tab panes -->
+        <div class="tab-content">
+          <!-- Sección 1: Condiciones de trabajo -->
+          <div class="tab-pane active" id="condiciones" role="tabpanel" aria-labelledby="condiciones-tab">
+            <div class="card shadow-sm">
+              <div class="card-header bg-light">
+                <h3 class="mb-0"><i class="fas fa-hard-hat me-2"></i>Condiciones de trabajo</h3>
+              </div>
+              <div class="card-body">
+                <p class="text-muted">Para responder las preguntas siguientes considere las condiciones de su centro de trabajo, así como la cantidad y ritmo de trabajo.</p>
+                
+                <div class="question-group">
+                  <!-- Pregunta 1 -->
+                  <div class="mb-4">
+                    <label class="form-label">1. Mi trabajo me exige hacer mucho esfuerzo físico</label>
+                    <select class="form-select" name="pregunta1" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 2 -->
+                  <div class="mb-4">
+                    <label class="form-label">2. Me preocupa sufrir un accidente en mi trabajo</label>
+                    <select class="form-select" name="pregunta2" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 3 -->
+                  <div class="mb-4">
+                    <label class="form-label">3. Considero que las actividades que realizo son peligrosas</label>
+                    <select class="form-select" name="pregunta3" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 4 -->
+                  <div class="mb-4">
+                    <label class="form-label">4. Por la cantidad de trabajo que tengo debo quedarme tiempo adicional a mi turno</label>
+                    <select class="form-select" name="pregunta4" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 5 -->
+                  <div class="mb-4">
+                    <label class="form-label">5. Por la cantidad de trabajo que tengo debo trabajar sin parar</label>
+                    <select class="form-select" name="pregunta5" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 6 -->
+                  <div class="mb-4">
+                    <label class="form-label">6. Considero que es necesario mantener un ritmo de trabajo acelerado</label>
+                    <select class="form-select" name="pregunta6" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 7 -->
+                  <div class="mb-4">
+                    <label class="form-label">7. Mi trabajo exige que esté muy concentrado</label>
+                    <select class="form-select" name="pregunta7" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 8 -->
+                  <div class="mb-4">
+                    <label class="form-label">8. Mi trabajo requiere que memorice mucha información</label>
+                    <select class="form-select" name="pregunta8" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 9 -->
+                  <div class="mb-4">
+                    <label class="form-label">9. Mi trabajo exige que atienda varios asuntos al mismo tiempo</label>
+                    <select class="form-select" name="pregunta9" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sección 2: Actividades y responsabilidades -->
+          <div class="tab-pane" id="actividades" role="tabpanel" aria-labelledby="actividades-tab">
+            <div class="card shadow-sm">
+              <div class="card-header bg-light">
+                <h3 class="mb-0"><i class="fas fa-tasks me-2"></i>Actividades y responsabilidades</h3>
+              </div>
+              <div class="card-body">
+                <p class="text-muted">Las preguntas siguientes están relacionadas con las actividades que realiza en su trabajo y las responsabilidades que tiene.</p>
+                
+                <div class="question-group">
+                  <!-- Pregunta 10 -->
+                  <div class="mb-4">
+                    <label class="form-label">10. En mi trabajo soy responsable de cosas de mucho valor</label>
+                    <select class="form-select" name="pregunta10" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 11 -->
+                  <div class="mb-4">
+                    <label class="form-label">11. Respondo ante mi jefe por los resultados de toda mi área de trabajo</label>
+                    <select class="form-select" name="pregunta11" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 12 -->
+                  <div class="mb-4">
+                    <label class="form-label">12. En mi trabajo me dan órdenes contradictorias</label>
+                    <select class="form-select" name="pregunta12" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 13 -->
+                  <div class="mb-4">
+                    <label class="form-label">13. Considero que en mi trabajo me piden hacer cosas innecesarias</label>
+                    <select class="form-select" name="pregunta13" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sección 3: Tiempo de trabajo -->
+          <div class="tab-pane" id="tiempo" role="tabpanel" aria-labelledby="tiempo-tab">
+            <div class="card shadow-sm">
+              <div class="card-header bg-light">
+                <h3 class="mb-0"><i class="fas fa-clock me-2"></i>Tiempo de trabajo</h3>
+              </div>
+              <div class="card-body">
+                <p class="text-muted">Las preguntas siguientes están relacionadas con el tiempo destinado a su trabajo y sus responsabilidades familiares.</p>
+                
+                <div class="question-group">
+                  <!-- Pregunta 14 -->
+                  <div class="mb-4">
+                    <label class="form-label">14. Trabajo horas extras más de tres veces a la semana</label>
+                    <select class="form-select" name="pregunta14" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 15 -->
+                  <div class="mb-4">
+                    <label class="form-label">15. Mi trabajo me exige laborar en días de descanso, festivos o fines de semana</label>
+                    <select class="form-select" name="pregunta15" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 16 -->
+                  <div class="mb-4">
+                    <label class="form-label">16. Considero que el tiempo en el trabajo es mucho y perjudica mis actividades familiares o personales</label>
+                    <select class="form-select" name="pregunta16" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 17 -->
+                  <div class="mb-4">
+                    <label class="form-label">17. Pienso en las actividades familiares o personales cuando estoy en mi trabajo</label>
+                    <select class="form-select" name="pregunta17" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sección 4: Decisiones en el trabajo -->
+          <div class="tab-pane" id="decisiones" role="tabpanel" aria-labelledby="decisiones-tab">
+            <div class="card shadow-sm">
+              <div class="card-header bg-light">
+                <h3 class="mb-0"><i class="fas fa-check-circle me-2"></i>Decisiones en el trabajo</h3>
+              </div>
+              <div class="card-body">
+                <p class="text-muted">Las preguntas siguientes están relacionadas con las decisiones que puede tomar en su trabajo.</p>
+                
+                <div class="question-group">
+                  <!-- Pregunta 18 -->
+                  <div class="mb-4">
+                    <label class="form-label">18. Mi trabajo permite que desarrolle nuevas habilidades</label>
+                    <select class="form-select" name="pregunta18" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 19 -->
+                  <div class="mb-4">
+                    <label class="form-label">19. En mi trabajo puedo aspirar a un mejor puesto</label>
+                    <select class="form-select" name="pregunta19" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 20 -->
+                  <div class="mb-4">
+                    <label class="form-label">20. Durante mi jornada de trabajo puedo tomar pausas cuando las necesito</label>
+                    <select class="form-select" name="pregunta20" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 21 -->
+                  <div class="mb-4">
+                    <label class="form-label">21. Puedo decidir la velocidad a la que realizo mis actividades en mi trabajo</label>
+                    <select class="form-select" name="pregunta21" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 22 -->
+                  <div class="mb-4">
+                    <label class="form-label">22. Puedo cambiar el orden de las actividades que realizo en mi trabajo</label>
+                    <select class="form-select" name="pregunta22" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sección 5: Capacitación e información -->
+          <div class="tab-pane" id="capacitacion" role="tabpanel" aria-labelledby="capacitacion-tab">
+            <div class="card shadow-sm">
+              <div class="card-header bg-light">
+                <h3 class="mb-0"><i class="fas fa-graduation-cap me-2"></i>Capacitación e información</h3>
+              </div>
+              <div class="card-body">
+                <p class="text-muted">Las preguntas siguientes están relacionadas con la capacitación e información que recibe sobre su trabajo.</p>
+                
+                <div class="question-group">
+                  <!-- Pregunta 23 -->
+                  <div class="mb-4">
+                    <label class="form-label">23. Me informan con claridad cuáles son mis funciones</label>
+                    <select class="form-select" name="pregunta23" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 24 -->
+                  <div class="mb-4">
+                    <label class="form-label">24. Me explican claramente los resultados que debo obtener en mi trabajo</label>
+                    <select class="form-select" name="pregunta24" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 25 -->
+                  <div class="mb-4">
+                    <label class="form-label">25. Me informan con quién puedo resolver problemas o asuntos de trabajo</label>
+                    <select class="form-select" name="pregunta25" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 26 -->
+                  <div class="mb-4">
+                    <label class="form-label">26. Me permiten asistir a capacitaciones relacionadas con mi trabajo</label>
+                    <select class="form-select" name="pregunta26" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 27 -->
+                  <div class="mb-4">
+                    <label class="form-label">27. Recibo capacitación útil para hacer mi trabajo</label>
+                    <select class="form-select" name="pregunta27" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sección 6: Relaciones laborales -->
+          <div class="tab-pane" id="relaciones" role="tabpanel" aria-labelledby="relaciones-tab">
+            <div class="card shadow-sm">
+              <div class="card-header bg-light">
+                <h3 class="mb-0"><i class="fas fa-users me-2"></i>Relaciones laborales</h3>
+              </div>
+              <div class="card-body">
+                <p class="text-muted">Las preguntas siguientes se refieren a las relaciones con sus compañeros de trabajo y su jefe.</p>
+                
+                <div class="question-group">
+                  <!-- Pregunta 28 -->
+                  <div class="mb-4">
+                    <label class="form-label">28. Mi jefe tiene en cuenta mis puntos de vista y opiniones</label>
+                    <select class="form-select" name="pregunta28" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 29 -->
+                  <div class="mb-4">
+                    <label class="form-label">29. Mi jefe ayuda a solucionar los problemas que se presentan en el trabajo</label>
+                    <select class="form-select" name="pregunta29" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 30 -->
+                  <div class="mb-4">
+                    <label class="form-label">30. Puedo confiar en mis compañeros de trabajo</label>
+                    <select class="form-select" name="pregunta30" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 31 -->
+                  <div class="mb-4">
+                    <label class="form-label">31. Cuando tenemos que realizar trabajo de equipo los compañeros colaboran</label>
+                    <select class="form-select" name="pregunta31" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 32 -->
+                  <div class="mb-4">
+                    <label class="form-label">32. Mis compañeros de trabajo me ayudan cuando tengo dificultades</label>
+                    <select class="form-select" name="pregunta32" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 33 -->
+                  <div class="mb-4">
+                    <label class="form-label">33. En mi trabajo puedo expresarme libremente sin interrupciones</label>
+                    <select class="form-select" name="pregunta33" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 34 -->
+                  <div class="mb-4">
+                    <label class="form-label">34. Recibo críticas constantes a mi persona y/o trabajo</label>
+                    <select class="form-select" name="pregunta34" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 35 -->
+                  <div class="mb-4">
+                    <label class="form-label">35. Recibo burlas, calumnias, difamaciones, humillaciones o ridiculizaciones</label>
+                    <select class="form-select" name="pregunta35" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 36 -->
+                  <div class="mb-4">
+                    <label class="form-label">36. Se ignora mi presencia o se me excluye de las reuniones de trabajo y en la toma de decisiones</label>
+                    <select class="form-select" name="pregunta36" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 37 -->
+                  <div class="mb-4">
+                    <label class="form-label">37. Se manipulan las situaciones de trabajo para hacerme parecer un mal trabajador</label>
+                    <select class="form-select" name="pregunta37" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 38 -->
+                  <div class="mb-4">
+                    <label class="form-label">38. Se ignoran mis éxitos laborales y se atribuyen a otros trabajadores</label>
+                    <select class="form-select" name="pregunta38" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 39 -->
+                  <div class="mb-4">
+                    <label class="form-label">39. Me bloquean o impiden las oportunidades que tengo para obtener ascenso o mejora en mi trabajo</label>
+                    <select class="form-select" name="pregunta39" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                  
+                  <!-- Pregunta 40 -->
+                  <div class="mb-4">
+                    <label class="form-label">40. He presenciado actos de violencia en mi centro de trabajo</label>
+                    <select class="form-select" name="pregunta40" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Siempre">Siempre</option>
+                      <option value="Casi siempre">Casi siempre</option>
+                      <option value="Algunas veces">Algunas veces</option>
+                      <option value="Casi nunca">Casi nunca</option>
+                      <option value="Nunca">Nunca</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sección 7: Atención a clientes -->
+          <div class="tab-pane" id="clientes" role="tabpanel" aria-labelledby="clientes-tab">
+            <div class="card shadow-sm">
+              <div class="card-header bg-light">
+                <h3 class="mb-0"><i class="fas fa-user-friends me-2"></i>Atención a clientes</h3>
+              </div>
+              <div class="card-body">
+                <p class="text-muted">En mi trabajo debo brindar servicio a clientes o usuarios:</p>
+                
+                <div class="question-group">
+                  <div class="mb-4">
+                    <label class="form-label">¿Debe brindar servicio a clientes o usuarios?</label>
+                    <select class="form-select" id="servicioClientes" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Sí">Sí</option>
+                      <option value="No">No</option>
+                    </select>
+                  </div>
+                  
+                  <div id="preguntasClientes" style="display: none;">
+                    <p class="text-muted">Si su respuesta fue "SÍ", responda las preguntas siguientes.</p>
+                    
+                    <!-- Pregunta 41 -->
+                    <div class="mb-4">
+                      <label class="form-label">41. Atiendo clientes o usuarios muy enojados</label>
+                      <select class="form-select" name="pregunta41">
+                        <option value="">Seleccione una opción</option>
+                        <option value="Siempre">Siempre</option>
+                        <option value="Casi siempre">Casi siempre</option>
+                        <option value="Algunas veces">Algunas veces</option>
+                        <option value="Casi nunca">Casi nunca</option>
+                        <option value="Nunca">Nunca</option>
+                      </select>
+                    </div>
+                    
+                    <!-- Pregunta 42 -->
+                    <div class="mb-4">
+                      <label class="form-label">42. Mi trabajo me exige atender personas muy necesitadas de ayuda o enfermas</label>
+                      <select class="form-select" name="pregunta42">
+                        <option value="">Seleccione una opción</option>
+                        <option value="Siempre">Siempre</option>
+                        <option value="Casi siempre">Casi siempre</option>
+                        <option value="Algunas veces">Algunas veces</option>
+                        <option value="Casi nunca">Casi nunca</option>
+                        <option value="Nunca">Nunca</option>
+                      </select>
+                    </div>
+                    
+                    <!-- Pregunta 43 -->
+                    <div class="mb-4">
+                      <label class="form-label">43. Para hacer mi trabajo debo demostrar sentimientos distintos a los míos</label>
+                      <select class="form-select" name="pregunta43">
+                        <option value="">Seleccione una opción</option>
+                        <option value="Siempre">Siempre</option>
+                        <option value="Casi siempre">Casi siempre</option>
+                        <option value="Algunas veces">Algunas veces</option>
+                        <option value="Casi nunca">Casi nunca</option>
+                        <option value="Nunca">Nunca</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sección 8: Supervisión de trabajadores -->
+          <div class="tab-pane" id="supervision" role="tabpanel" aria-labelledby="supervision-tab">
+            <div class="card shadow-sm">
+              <div class="card-header bg-light">
+                <h3 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Supervisión de trabajadores</h3>
+              </div>
+              <div class="card-body">
+                <p class="text-muted">Soy jefe de otros trabajadores:</p>
+                
+                <div class="question-group">
+                  <div class="mb-4">
+                    <label class="form-label">¿Es jefe de otros trabajadores?</label>
+                    <select class="form-select" id="esJefe" required>
+                      <option value="">Seleccione una opción</option>
+                      <option value="Sí">Sí</option>
+                      <option value="No">No</option>
+                    </select>
+                  </div>
+                  
+                  <div id="preguntasJefe" style="display: none;">
+                    <p class="text-muted">Si su respuesta fue "SÍ", responda las preguntas siguientes.</p>
+                    
+                    <!-- Pregunta 44 -->
+                    <div class="mb-4">
+                      <label class="form-label">44. Comunican tarde los asuntos de trabajo</label>
+                      <select class="form-select" name="pregunta44">
+                        <option value="">Seleccione una opción</option>
+                        <option value="Siempre">Siempre</option>
+                        <option value="Casi siempre">Casi siempre</option>
+                        <option value="Algunas veces">Algunas veces</option>
+                        <option value="Casi nunca">Casi nunca</option>
+                        <option value="Nunca">Nunca</option>
+                      </select>
+                    </div>
+                    
+                    <!-- Pregunta 45 -->
+                    <div class="mb-4">
+                      <label class="form-label">45. Dificultan el logro de los resultados del trabajo</label>
+                      <select class="form-select" name="pregunta45">
+                        <option value="">Seleccione una opción</option>
+                        <option value="Siempre">Siempre</option>
+                        <option value="Casi siempre">Casi siempre</option>
+                        <option value="Algunas veces">Algunas veces</option>
+                        <option value="Casi nunca">Casi nunca</option>
+                        <option value="Nunca">Nunca</option>
+                      </select>
+                    </div>
+                    
+                    <!-- Pregunta 46 -->
+                    <div class="mb-4">
+                      <label class="form-label">46. Ignoran las sugerencias para mejorar su trabajo</label>
+                      <select class="form-select" name="pregunta46">
+                        <option value="">Seleccione una opción</option>
+                        <option value="Siempre">Siempre</option>
+                        <option value="Casi siempre">Casi siempre</option>
+                        <option value="Algunas veces">Algunas veces</option>
+                        <option value="Casi nunca">Casi nunca</option>
+                        <option value="Nunca">Nunca</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones de navegación -->
+        <div class="d-flex justify-content-between mt-4">
+          <button type="button" class="btn btn-outline-primary" id="prevTab">
+            <i class="fas fa-arrow-left me-2"></i>Anterior
+          </button>
+          <button type="button" class="btn btn-primary" id="nextTab">
+            Siguiente<i class="fas fa-arrow-right ms-2"></i>
+          </button>
+        </div>
+
+        <!-- Botón de envío (solo visible en última pestaña) -->
+        <div class="text-center mt-4 d-none" id="submitContainer">
+          <button type="submit" class="btn btn-success btn-lg">
+            <i class="fas fa-paper-plane me-2"></i>Enviar Cuestionario
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal para mensajes -->
+  <div class="modal fade" id="mensajeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitulo">Mensaje</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="modalMensaje"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Aceptar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS y dependencias -->
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+
+  <!-- JavaScript personalizado -->
+  <script src="Js/psicosocial-trabajo.js"></script>
+</body>
+</html>
