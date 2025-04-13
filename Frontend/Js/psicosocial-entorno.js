@@ -288,6 +288,27 @@ document.addEventListener('DOMContentLoaded', function() {
     mensajeModal.show();
   }
 
+  // Modifica la función updateCounterMessage así:
+function updateCounterMessage(count, empresa, id) {
+  const counterMsg = `Eres la persona número ${count} en ingresar al cuestionario de la empresa ${empresa} con identificador ${id}. Por favor no salgas del formulario hasta terminar o perderás tu participación.`;
+  
+  // Crear un elemento footer si no existe
+  let footer = document.getElementById('counterFooter');
+  if (!footer) {
+    footer = document.createElement('div');
+    footer.id = 'counterFooter';
+    footer.style.marginTop = '2rem';
+    footer.style.padding = '1rem';
+    footer.style.backgroundColor = '#f8f9fa';
+    footer.style.borderTop = '1px solid #dee2e6';
+    footer.style.textAlign = 'center';
+    footer.style.fontSize = '0.9em';
+    footer.style.color = '#6c757d';
+    document.body.appendChild(footer);
+  }
+  
+  footer.textContent = counterMsg;
+}
 
 
   function checkEmpresaId() {

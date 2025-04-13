@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function determinarFormularioRedireccion(cantidadEmpleados) {
         if (cantidadEmpleados >= 1 && cantidadEmpleados <= 50) {
             return {
-                url: 'formulario2.html',
+                url: '../Formularios/psicosocial-trabajo.html',
                 requiereMuestra: false,
                 descripcion: 'Formulario básico para empresas pequeñas (1-50 empleados)'
             };
