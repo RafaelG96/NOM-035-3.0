@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 const traumaController = require('../controllers/traumaController');
 
-// Ruta para guardar cuestionario de trauma
-router.post('/cuestionarios', traumaController.guardarCuestionario);
+// Ruta para obtener empresas únicas
+router.get('/empresas', traumaController.obtenerEmpresas);
 
-// Ruta para obtener resultados
+// Otras rutas existentes
+router.post('/guardar', traumaController.guardarCuestionario);
 router.get('/resultados', traumaController.obtenerResultados);
 
 module.exports = router;

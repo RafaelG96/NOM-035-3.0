@@ -113,3 +113,20 @@ exports.obtenerResultados = async (req, res) => {
     });
   }
 };
+
+exports.obtenerEmpresas = async (req, res) => {
+  try {
+    // Obtener empresas únicas del campo "empresa"
+    const empresas = await TraumaCuestionario.distinct('empresa');
+    res.status(200).json({
+      success: true,
+      data: empresas
+    });
+  } catch (error) {
+    console.error('Error al obtener empresas:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error al obtener empresas'
+    });
+  }
+};

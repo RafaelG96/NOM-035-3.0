@@ -25,11 +25,6 @@
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
           <li class="nav-item">
-            <a class="nav-link" href="./empresa.html">
-              <i class="fas fa-building me-1"></i>Datos de Empresa
-            </a>
-          </li>
-          <li class="nav-item">
             <a class="nav-link active" href="./formulario.html">
               <i class="fas fa-clipboard-list me-1"></i>Formulario
             </a>
@@ -40,7 +35,8 @@
   </nav>
 
   <div class="container mt-5 pt-4">
-    <div id="loginSection">
+    <!-- Sección de acceso al cuestionario (escondida o eliminada) -->
+    <div id="loginSection" style="display: none;">
       <div class="row justify-content-center">
         <div class="col-md-8 col-lg-6">
           <div class="card shadow">
@@ -69,6 +65,7 @@
       </div>
     </div>
 
+    <!-- Sección del cuestionario -->
     <div id="cuestionarioSection" style="display: none;">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="mb-0">Factores de Riesgo Psicosocial en el Trabajo</h1>
@@ -903,5 +900,34 @@
 
   <!-- JavaScript personalizado -->
   <script src="../Js/psicosocial-trabajo.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Leer datos desde localStorage
+      const empresaId = localStorage.getItem('empresaId');
+      const empresaNombre = localStorage.getItem('empresaNombre');
+      const tipoFormulario = localStorage.getItem('tipoFormulario');
+
+      // Verificar si los datos están disponibles
+      if (!empresaId || !empresaNombre || !tipoFormulario) {
+        alert('No se encontraron datos de autenticación. Por favor, inicie sesión nuevamente.');
+        window.location.href = '../intermedio.html'; // Redirigir al inicio de sesión
+        return;
+      }
+
+      // Mostrar la sección del cuestionario y ocultar la de login
+      document.getElementById('loginSection').style.display = 'none';
+      document.getElementById('cuestionarioSection').style.display = 'block';
+
+      // Rellenar automáticamente los datos en el formulario
+      document.getElementById('empresaId').value = empresaId;
+
+      // Actualizar el contador o cualquier otro elemento con los datos de la empresa
+      const contador = document.getElementById('contador');
+      if (contador) {
+        contador.textContent = `Empresa: ${empresaNombre} (ID: ${empresaId})`;
+      }
+    });
+  </script>
 </body>
 </html>

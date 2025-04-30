@@ -1,0 +1,113 @@
+/* Estilos generales */
+body {
+    background-color: #f8f9fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.card {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 10px 10px 0 0 !important;
+}
+
+/* Estilos para tarjetas de resultados */
+.card-respuesta {
+    border-left: 4px solid #4e73df;
+}
+
+.card-summary {
+    border-left: 4px solid transparent;
+    transition: all 0.3s;
+}
+
+.card-summary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.card-summary:nth-child(1) {
+    border-left-color: #4e73df;
+}
+
+.card-summary:nth-child(2) {
+    border-left-color: #1cc88a;
+}
+
+.card-summary:nth-child(3) {
+    border-left-color: #f6c23e;
+}
+
+.icon-container {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+/* Estilos para preguntas */
+.pregunta-item {
+    padding: 12px 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border-left: 3px solid #dee2e6;
+    transition: all 0.2s;
+}
+
+.pregunta-item:hover {
+    background-color: #f1f3f5;
+    border-left-color: #4e73df;
+}
+
+/* Barras de progreso */
+.progress {
+    border-radius: 5px;
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    border-radius: 5px;
+}
+
+/* Badges personalizados */
+.badge {
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card-respuesta {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Responsividad */
+@media (max-width: 768px) {
+    .card-respuesta .card-body > .row > div {
+        margin-bottom: 20px;
+    }
+    
+    .icon-container {
+        width: 40px;
+        height: 40px;
+    }
+}

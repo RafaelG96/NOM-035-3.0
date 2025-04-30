@@ -5,7 +5,7 @@ async function validarAcceso() {
     // Limpiar errores previos
     mostrarError('');
     
-    if(!empresa || !clave) {
+    if (!empresa || !clave) {
         mostrarError('Por favor complete todos los campos');
         return;
     }
@@ -35,32 +35,24 @@ async function validarAcceso() {
         
         const data = await response.json();
         
-        if (!data.success) {
+        if (data.success) {
+            // Guardar datos en localStorage
+            localStorage.setItem('empresaId', data.empresa.id); // Asegúrate de que el servidor envíe el ID de la empresa
+            localStorage.setItem('empresaNombre', data.empresa.nombre);
+            localStorage.setItem('tipoFormulario', data.empresa.tipoFormulario);
+
+            // Redirigir al formulario correspondiente
+            let formularioRedireccion = '';
+            if (data.empresa.tipoFormulario === 'basico') {
+                formularioRedireccion = '../Formularios/psicosocial-trabajo.html';
+            } else if (data.empresa.tipoFormulario === 'completo') {
+                formularioRedireccion = '../Formularios/psicosocial-entorno.html';
+            }
+
+            window.location.href = formularioRedireccion;
+        } else {
             throw new Error(data.error || 'Credenciales inválidas');
         }
-        
-        // Guardar datos en localStorage si el checkbox está marcado
-        if (document.getElementById('recordarDatos').checked) {
-            localStorage.setItem('empresaNombre', empresa);
-        } else {
-            localStorage.removeItem('empresaNombre');
-        }
-        
-        // Determinar el formulario según la respuesta del servidor
-        let formularioRedireccion = '';
-        if (data.empresa.tipoFormulario === 'basico') {
-            formularioRedireccion = '../Formularios/psicosocial-trabajo.html'; // Para ≤50 empleados
-        } else if (data.empresa.tipoFormulario === 'completo') {
-            formularioRedireccion = '../Formularios/psicosocial-entorno.html'; // Para >50 empleados
-        }
-        
-        // Validar que se haya determinado un formulario
-        if (!formularioRedireccion) {
-            throw new Error('No se pudo determinar el formulario adecuado');
-        }
-        
-        // Redirigir al formulario correspondiente
-        window.location.href = formularioRedireccion;
         
     } catch (error) {
         mostrarError(error.message);

@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // URLs de la API
   const API_URL = 'http://localhost:3000/api';
   const VERIFY_URL = `${API_URL}/empresas/verify-clave`;
-  const RESPUESTAS_URL = `${API_URL}/respuestas`;
+  const RESPUESTAS_URL = `${API_URL}/psicosocial/entorno`;
 
   // Inicialización
   showTab(currentTab);
@@ -109,98 +109,102 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function handleSubmit(e) {
     e.preventDefault();
-    
+
     if (isSubmitting) return;
     isSubmitting = true;
-    
+
     const submitBtn = e.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando...';
 
     try {
-      // Validar todas las preguntas obligatorias
-      const requiredQuestions = document.querySelectorAll('[required]');
-      let isValid = true;
-      
-      requiredQuestions.forEach(question => {
-        if (!question.value) {
-          isValid = false;
-          question.classList.add('is-invalid');
-        } else {
-          question.classList.remove('is-invalid');
+        // Validar todas las preguntas obligatorias visibles
+        const requiredQuestions = document.querySelectorAll('[required]');
+        let isValid = true;
+
+        requiredQuestions.forEach(question => {
+            if (question.offsetParent !== null && !question.value) {
+                // Validar solo si la pregunta está visible
+                isValid = false;
+                question.classList.add('is-invalid');
+            } else {
+                question.classList.remove('is-invalid');
+            }
+        });
+
+        if (!isValid) {
+            showMessage('Error', 'Por favor responde todas las preguntas obligatorias.', 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+            isSubmitting = false;
+            return;
         }
-      });
-      
-      if (!isValid) {
-        showMessage('Error', 'Por favor responde todas las preguntas obligatorias.', 'error');
-        return;
-      }
 
-      // Validar preguntas condicionales
-      if (servicioClientes.value === '') {
-        showMessage('Error', 'Por favor indique si atiende clientes o usuarios', 'error');
-        return;
-      }
+        // Recolectar datos del formulario
+        const formData = new FormData(cuestionarioForm);
+        const data = {
+            empresaId: formData.get('empresaId'),
+            servicioClientes: servicioClientes.value === 'Sí',
+            esJefe: esJefe.value === 'Sí',
+            preguntas: {},
+            timestamp: new Date().toISOString()
+        };
 
-      if (esJefe.value === '') {
-        showMessage('Error', 'Por favor indique si es jefe de otros trabajadores', 'error');
-        return;
-      }
-
-      // Recolectar datos del formulario
-      const formData = new FormData(cuestionarioForm);
-      const data = {
-        empresaId: formData.get('empresaId'),
-        servicioClientes: servicioClientes.value === 'Sí',
-        esJefe: esJefe.value === 'Sí',
-        preguntas: {},
-        timestamp: new Date().toISOString()
-      };
-
-      // Agregar todas las respuestas
-      for (let i = 1; i <= 72; i++) {
-        const respuesta = formData.get(`pregunta${i}`);
-        if (respuesta) {
-          data.preguntas[`pregunta${i}`] = respuesta;
+        // Agregar todas las respuestas
+        for (let i = 1; i <= 72; i++) {
+            const respuesta = formData.get(`pregunta${i}`);
+            if (respuesta) {
+                data.preguntas[`pregunta${i}`] = respuesta;
+            }
         }
-      }
 
-      // Enviar datos al backend
-      fetch(RESPUESTAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      })
-      .then(response => response.json())
-      .then(result => {
-        if (result.success) {
-          showMessage('Éxito', 'Formulario enviado correctamente. Redirigiendo...', 'success');
-          setTimeout(() => {
-            window.location.href = `resultados.html?empresaId=${data.empresaId}`;
-          }, 2000);
-        } else {
-          throw new Error(result.message || 'Error al enviar respuestas');
-        }
-      })
-      .catch(error => {
+        // Enviar datos al backend
+        fetch(RESPUESTAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
+            }
+            return response.json();
+        })
+        .then(result => {
+            if (result.success) {
+                // Mostrar un modal de agradecimiento en lugar de redirigir
+                showMessage('¡Gracias!', 'Tu formulario ha sido enviado exitosamente. Agradecemos tu participación.', 'success');
+            } else {
+                throw new Error(result.message || 'Error al enviar respuestas');
+            }
+        })
+        .catch(error => {
+            console.error('Error completo:', error);
+            let errorMsg = 'Error al enviar el formulario';
+            if (error.response) {
+                // Si hay respuesta del servidor
+                error.response.json().then(errData => {
+                    showMessage('Error', errData.message || errorMsg, 'error');
+                });
+            } else {
+                showMessage('Error', error.message || errorMsg, 'error');
+            }
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+            isSubmitting = false;
+        });
+
+    } catch (error) {
         console.error('Error:', error);
-        showMessage('Error', error.message || 'Error al enviar el formulario', 'error');
-      })
-      .finally(() => {
+        showMessage('Error', error.message || 'Error al procesar el formulario', 'error');
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
         isSubmitting = false;
-      });
-
-    } catch (error) {
-      console.error('Error:', error);
-      showMessage('Error', error.message || 'Error al procesar el formulario', 'error');
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = originalText;
-      isSubmitting = false;
     }
-  }
+}
 
   // Funciones de navegación por pestañas
   function showTab(index) {
@@ -234,26 +238,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // Validar preguntas en la pestaña actual antes de avanzar
     const currentTabQuestions = tabs[currentTab].querySelectorAll('[required]');
     let isValid = true;
-    
+
     currentTabQuestions.forEach(question => {
-      if (!question.value) {
-        isValid = false;
-        question.classList.add('is-invalid');
-      } else {
-        question.classList.remove('is-invalid');
-      }
+        if (question.offsetParent !== null && !question.value) {
+            // Validar solo si la pregunta está visible
+            isValid = false;
+            question.classList.add('is-invalid');
+        } else {
+            question.classList.remove('is-invalid');
+        }
     });
-    
+
     if (!isValid) {
-      showMessage('Error', 'Por favor responde todas las preguntas obligatorias antes de continuar.', 'error');
-      return;
+        showMessage('Error', 'Por favor responde todas las preguntas obligatorias antes de continuar.', 'error');
+        return;
     }
-    
+
     if (currentTab < tabs.length - 1) {
-      currentTab++;
-      showTab(currentTab);
+        currentTab++;
+        showTab(currentTab);
     }
-  }
+}
 
   function prevTab() {
     if (currentTab > 0) {
@@ -311,52 +316,60 @@ function updateCounterMessage(count, empresa, id) {
 }
 
 
-  function checkEmpresaId() {
-    const empresaId = new URLSearchParams(window.location.search).get('empresaId') || localStorage.getItem('empresaId');
-    
+function checkEmpresaId() {
+    const params = new URLSearchParams(window.location.search);
+    const empresaId = params.get('empresaId') || localStorage.getItem('empresaId');
+    const formulario = params.get('formulario') || 'entorno'; // Por defecto 'entorno' para mantener compatibilidad
+
     if (!empresaId && !window.location.pathname.includes('index.html')) {
-      showMessage('Error', 'No se encontró el identificador de la empresa. Será redirigido al inicio.', 'error');
-      setTimeout(() => {
-        window.location.href = 'index.html';
-      }, 2000);
-      return;
+        showMessage('Error', 'No se encontró el identificador de la empresa. Será redirigido al inicio.', 'error');
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 2000);
+        return;
     }
-    
+
     if (document.getElementById('empresaId')) {
-      document.getElementById('empresaId').value = empresaId;
+        document.getElementById('empresaId').value = empresaId;
     }
-  }
+
+    // Opcional: Mostrar el tipo de formulario si es necesario
+    if (document.getElementById('formularioTitulo')) {
+        document.getElementById('formularioTitulo').textContent = 
+            formulario === 'trabajo' ? 'Formulario #2 - Psicosocial Trabajo' : 'Formulario #3 - Psicosocial Entorno';
+    }
+}
 
   function initializeConditionalQuestions() {
     // Configurar eventos para preguntas condicionales
     if (servicioClientes) {
-      servicioClientes.addEventListener('change', function() {
-        const show = this.value === 'Sí';
-        preguntasClientes.style.display = show ? 'block' : 'none';
-        
-        // Actualizar atributo required
-        const clientQuestions = preguntasClientes.querySelectorAll('select');
-        clientQuestions.forEach(question => {
-          question.required = show;
-          if (!show) question.value = '';
+        servicioClientes.addEventListener('change', function () {
+            const show = this.value === 'Sí';
+            preguntasClientes.style.display = show ? 'block' : 'none';
+
+            // Actualizar atributo required solo si está visible
+            const clientQuestions = preguntasClientes.querySelectorAll('select');
+            clientQuestions.forEach(question => {
+                question.required = show; // Solo requerido si está visible
+                if (!show) question.value = ''; // Limpiar valor si no es visible
+            });
         });
-      });
     }
 
     if (esJefe) {
-      esJefe.addEventListener('change', function() {
-        const show = this.value === 'Sí';
-        preguntasJefe.style.display = show ? 'block' : 'none';
-        
-        // Actualizar atributo required
-        const bossQuestions = preguntasJefe.querySelectorAll('select');
-        bossQuestions.forEach(question => {
-          question.required = show;
-          if (!show) question.value = '';
+        esJefe.addEventListener('change', function () {
+            const show = this.value === 'Sí';
+            preguntasJefe.style.display = show ? 'block' : 'none';
+
+            // Actualizar atributo required solo si está visible
+            const bossQuestions = preguntasJefe.querySelectorAll('select');
+            bossQuestions.forEach(question => {
+                question.required = show; // Solo requerido si está visible
+                if (!show) question.value = ''; // Limpiar valor si no es visible
+            });
         });
-      });
     }
-  }
+}
 
   // Verificar si hay datos guardados al cargar
  // const savedEmpresaId = localStorage.getItem('empresaId');
@@ -366,4 +379,29 @@ function updateCounterMessage(count, empresa, id) {
 //   document.getElementById('empresaId').value = savedEmpresaId;
 // }
 
+  // Variables globales
+  const empresaId = localStorage.getItem('empresaId');
+  const empresaNombre = localStorage.getItem('empresaNombre');
+
+  // Verificar si los datos están disponibles
+  if (!empresaId || !empresaNombre) {
+    alert('No se encontraron datos de autenticación. Por favor, inicie sesión nuevamente.');
+    window.location.href = '../index.html'; // Redirigir al inicio
+    return;
+  }
+
+  // Mostrar el formulario de cuestionario
+  if (cuestionarioSection) {
+    cuestionarioSection.style.display = 'block';
+  }
+
+  // Mostrar el identificador de la empresa en el contador (opcional)
+  if (contador) {
+    contador.textContent = `Empresa: ${empresaNombre} (ID: ${empresaId})`;
+  }
+
+  // Inicializar el cuestionario
+  showTab(0);
+  updateProgress();
+  initializeConditionalQuestions();
 });

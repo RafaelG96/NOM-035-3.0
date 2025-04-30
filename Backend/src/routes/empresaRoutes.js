@@ -6,6 +6,10 @@ const empresaController = require('../controllers/empresaController');
 router.post('/', empresaController.createEmpresa);
 router.get('/', empresaController.getAllEmpresas);
 
+// filtrar empresas por nombre y tipo de formulario
+router.get('/con-formulario-basico', empresaController.getEmpresasConFormularioBasico);
+router.get('/con-formulario-completo', empresaController.getEmpresasConFormularioCompleto);
+
 // Ruta para verificar la clave de la empresa
 router.post('/verify-clave', empresaController.verifyClave);
 

@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Respuesta = require('../models/respuesta');
 const Empresa = require('../models/empresa');
-const calcularPuntaje = require('../utils/calcularPuntaje');
+const calcularPuntaje = require('../utils/calcularPuntajeEntorno');
 
 // Función para determinar nivel de riesgo con el nivel "Nulo" incluido
 function determinarNivelRiesgo(puntaje) {
@@ -273,10 +273,31 @@ const getRespuestaById = async (req, res) => {
   }
 };
 
+const obtenerResultadosEntorno = async (req, res) => {
+  try {
+    const { empresaId } = req.params;
+
+    // Busca las respuestas del formulario largo en la base de datos
+    const resultados = await Respuesta.find({ empresaId, tipoFormulario: 'entorno' });
+
+    res.status(200).json({
+      success: true,
+      data: resultados || [] // Devuelve un arreglo vacío si no hay resultados
+    });
+  } catch (error) {
+    console.error('Error al obtener resultados del formulario largo:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener resultados del formulario largo'
+    });
+  }
+};
+
 module.exports = {
   guardarRespuesta,
   getRespuestasByEmpresa,
   getRespuestaById,
   determinarNivelRiesgo,
-  obtenerRecomendaciones
+  obtenerRecomendaciones,
+  obtenerResultadosEntorno
 };

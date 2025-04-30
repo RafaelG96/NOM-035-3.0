@@ -14,7 +14,7 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="#">
+            <a class="navbar-brand" href="index.html">
                 <img src="https://cdn-icons-png.flaticon.com/512/1570/1570887.png" alt="Logo" width="30" height="30" class="d-inline-block align-top me-2">
                 NOM-035
             </a>
@@ -34,6 +34,11 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#implementacion">Implementación</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#resultadosModal">
+                            <i class="fas fa-chart-bar me-1"></i>Resultados
+                        </a>
                     </li>
                 </ul>
             </div>
@@ -260,6 +265,32 @@
         </div>
     </div>
 </section>
+
+    <!-- Modal para seleccionar tipo de resultados -->
+    <div class="modal fade" id="resultadosModal" tabindex="-1" aria-labelledby="resultadosModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="resultadosModalLabel">Selecciona el tipo de resultados</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p>Elige el formulario cuyos resultados deseas consultar:</p>
+                    <div class="d-grid gap-3">
+                        <a href="./Formularios/resultados.html" class="btn btn-primary">
+                            <i class="fas fa-building me-2"></i>Psicosocial Entorno
+                        </a>
+                        <a href="./Formularios/resultadosTrabajo.html" class="btn btn-secondary">
+                            <i class="fas fa-briefcase me-2"></i>Psicosocial Trabajo
+                        </a>
+                        <a href="./Formularios/resultadosTraumaticos.html" class="btn btn-secondary">
+                            <i class="fas fa-briefcase me-2"></i>Traumaticos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer class="text-center">

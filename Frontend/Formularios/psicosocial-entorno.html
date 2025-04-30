@@ -35,7 +35,7 @@
   </nav>
 
   <div class="container mt-5 pt-4">
-    <div id="loginSection">
+    <div id="loginSection" style="display: none;">
       <div class="row justify-content-center">
         <div class="col-md-8 col-lg-6">
           <div class="card shadow">
@@ -72,6 +72,8 @@
 
       <form id="cuestionarioForm">
         <input type="hidden" id="empresaId" name="empresaId" value="">
+        <!-- Tipo de formulario en campo oculto-->
+        <input type="hidden" id="tipoFormulario" name="tipoFormulario" value="entorno">
         
         <!-- Nav tabs -->
         <ul class="nav nav-tabs mb-4" id="questionnaireTabs" role="tablist">

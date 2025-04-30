@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resultados Encuestas</title>
+    <title>Resultados Cuestionario de Trauma</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome para íconos -->
@@ -25,8 +25,8 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" href="./resultados.html">
-                            <i class="fas fa-chart-bar me-1"></i>Resultados
+                        <a class="nav-link active" href="./resultadosTraumaticos.html">
+                            <i class="fas fa-chart-bar me-1"></i>Resultados Trauma
                         </a>
                     </li>
                 </ul>
@@ -41,7 +41,7 @@
                 <div class="card shadow-sm">
                     <div class="card-header bg-white">
                         <h1 class="h4 mb-0 text-primary">
-                            <i class="fas fa-chart-pie me-2"></i>Resultados de Encuestas
+                            <i class="fas fa-chart-pie me-2"></i>Resultados Cuestionario de Trauma
                         </h1>
                     </div>
                     <div class="card-body">
@@ -51,6 +51,14 @@
                             <select id="empresaSelect" class="form-select form-select-lg">
                                 <option value="" selected disabled>-- Seleccione una empresa --</option>
                             </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="empresaInput" class="form-label fw-bold">Nombre de la empresa:</label>
+                            <input type="text" id="empresaInput" class="form-control" placeholder="Ingrese el nombre de la empresa">
+                            <button id="buscarBtn" class="btn btn-primary mt-3">
+                                <i class="fas fa-search me-2"></i>Buscar Respuestas
+                            </button>
                         </div>
 
                         <!-- Loading -->
@@ -71,13 +79,13 @@
                                 <div>
                                     <span class="badge bg-info text-dark">
                                         <i class="fas fa-history me-1"></i>
-                                        Actualizado: <span id="fechaActualizacion"></span>
+                                        Actualizado: <span id="fechaUltimaActualizacion"></span>
                                     </span>
                                 </div>
                             </div>
 
                             <div id="resumenEmpresa" class="row mb-4">
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <div class="card card-summary h-100">
                                         <div class="card-body text-center py-3">
                                             <div class="icon-container bg-primary bg-opacity-10">
@@ -88,7 +96,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <div class="card card-summary h-100">
                                         <div class="card-body text-center py-3">
                                             <div class="icon-container bg-info bg-opacity-10">
@@ -99,7 +107,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <div class="card card-summary h-100">
                                         <div class="card-body text-center py-3">
                                             <div class="icon-container bg-warning bg-opacity-10">
@@ -112,34 +120,9 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
-                                    <div class="card card-summary h-100">
-                                        <div class="card-body text-center py-3">
-                                            <div class="icon-container bg-success bg-opacity-10">
-                                                <i class="fas fa-calendar-alt text-success fs-4"></i>
-                                            </div>
-                                            <h3 class="h6 text-muted mt-1 mb-1">Última Actualización</h3>
-                                            <p id="fechaUltimaEncuesta" class="small mb-0">--/--/----</p>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
 
-                            <!-- Sección de necesidad de acción -->
-                            <div id="accionRiesgoContainer" class="mb-4 d-none">
-                                <div class="card">
-                                    <div class="card-header bg-white">
-                                        <h5 class="mb-0">
-                                            <i class="fas fa-exclamation-circle me-2"></i>
-                                            Necesidad de acción según nivel de riesgo
-                                        </h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div id="accionRiesgoContent"></div>
-                                    </div>
-                                </div>
-                            </div>
-
+                            <!-- Sección de respuestas -->
                             <div id="respuestasList" class="row"></div>
                         </div>
 
@@ -154,24 +137,6 @@
         </div>
     </main>
 
-    <!-- Modal para mensajes -->
-    <div class="modal fade" id="mensajeModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalTitulo">Título</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body" id="modalMensaje">
-                    Mensaje de contenido
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Aceptar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Footer -->
     <footer class="bg-light py-4 mt-5">
         <div class="container text-center text-muted">
@@ -181,8 +146,8 @@
 
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Script de resultados -->
-    <script src="../Js/resultados.js"></script>
+    <!-- Script de resultados para trauma -->
+    <script src="../Js/resultadosTraumaticos.js"></script>
 </body>
 
 </html>

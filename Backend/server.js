@@ -5,99 +5,90 @@ require('dotenv').config();
 
 const app = express();
 
-// Configuración mejorada de CORS
+// Configuración CORS
 const corsOptions = {
-  origin: ['http://localhost:5500', 'http://127.0.0.1:5500'], // Ambos posibles orígenes
+  origin: ['http://localhost:5500', 'http://127.0.0.1:5500'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
 
-// Middleware
-app.use(cors(corsOptions)); // Aplicar configuración CORS una sola vez
-app.use(express.json()); // Para parsear application/json
-app.use(express.urlencoded({ extended: true })); // Para parsear application/x-www-form-urlencoded
+// Middlewares
+app.use(cors(corsOptions));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Conexión a MongoDB con configuración mejorada
+// Conexión a MongoDB
 const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/nom035DB';
 mongoose.connect(mongoURI, {
-  serverSelectionTimeoutMS: 5000, // Tiempo de espera para conexión
-  socketTimeoutMS: 45000, // Tiempo de espera para operaciones
-  maxPoolSize: 10, // Número máximo de conexiones en el pool
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+  maxPoolSize: 10,
   retryWrites: true,
   w: 'majority'
 })
 .then(() => console.log('✅ Conectado a MongoDB'))
 .catch(err => {
   console.error('❌ Error al conectar a MongoDB:', err.message);
-  process.exit(1); // Salir si no hay conexión a la DB
+  process.exit(1);
 });
 
-// Manejo de eventos de conexión
-mongoose.connection.on('connected', () => {
-  console.log('Mongoose conectado a la DB');
-});
+// Eventos de conexión
+mongoose.connection.on('connected', () => console.log('Mongoose conectado'));
+mongoose.connection.on('error', (err) => console.error('Error de Mongoose:', err));
+mongoose.connection.on('disconnected', () => console.log('Mongoose desconectado'));
 
-mongoose.connection.on('error', (err) => {
-  console.error('Error de conexión de Mongoose:', err);
-});
+// ======================
+// Importación de rutas
+// ======================
+const empresaRoutes = require('./src/routes/empresaRoutes');
+const empleadoRoutes = require('./src/routes/empleadoRoutes');
+const traumaRoutes = require('./src/routes/traumaRoutes');
+const respuestaRoutes = require('./src/routes/respuestaRoutes'); // Archivo unificado
 
-mongoose.connection.on('disconnected', () => {
-  console.log('Mongoose desconectado');
-});
-
-// Importar rutas de ambos cuestionarios
-const respuestaRoutes = require('./src/routes/respuestaRoutes'); // Rutas del cuestionario existente
-const empresaRoutes = require('./src/routes/empresaRoutes');    // Rutas del cuestionario existente
-const traumaRoutes = require('./src/routes/traumaRoutes');      // Nuevas rutas para cuestionario traumático
-const empleadoRoutes = require('./src/routes/empleadoRoutes'); //nueva ruta para verificacion
-
+// ======================
 // Configuración de rutas
-app.use('/api/empresas', empresaRoutes);         // Rutas existentes
-app.use('/api/respuestas', respuestaRoutes);     // Rutas existentes
-app.use('/api/trauma', traumaRoutes);           // Nuevas rutas para cuestionario traumático
-app.use('/api/empleados', empleadoRoutes); //nueva ruta para verificacion
+// ======================
+app.use('/api/empresas', empresaRoutes);
+app.use('/api/empleados', empleadoRoutes);
+app.use('/api/trauma', traumaRoutes);
 
-// Ruta de verificación de salud del servidor
+// Ruta unificada para todos los cuestionarios psicosociales
+app.use('/api/psicosocial', respuestaRoutes); // Todas las rutas de formularios aquí
+
+// Health Check
 app.get('/api/health', (req, res) => {
   res.status(200).json({
-    success: true,
-    message: 'Servidor funcionando correctamente',
-    timestamp: new Date(),
-    database: mongoose.connection.readyState === 1 ? 'Conectado' : 'Desconectado'
+    status: 'healthy',
+    dbStatus: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    timestamp: new Date()
   });
 });
 
-// Middleware para manejar errores 404
-app.use((req, res, next) => {
-  res.status(404).json({ 
-    success: false,
-    error: 'Endpoint no encontrado' 
-  });
+// Manejo de errores
+app.use((req, res) => {
+  res.status(404).json({ error: 'Endpoint no encontrado' });
 });
 
-// Middleware para manejo centralizado de errores
 app.use((err, req, res, next) => {
-  console.error('Error del servidor:', err.stack);
-  res.status(500).json({
-    success: false,
+  console.error(err.stack);
+  res.status(500).json({ 
     error: 'Error interno del servidor',
-    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    details: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
 
 // Iniciar servidor
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`📚 Base de datos: ${mongoURI}`);
+  console.log(`Servidor ejecutándose en puerto ${PORT}`);
 });
 
-// Manejo de cierre adecuado
+// Shutdown graceful
 const gracefulShutdown = () => {
   mongoose.connection.close(() => {
-    console.log('Mongoose desconectado por terminación de la aplicación');
+    console.log('Conexión a MongoDB cerrada');
     server.close(() => {
-      console.log('Servidor cerrado');
+      console.log('Servidor detenido');
       process.exit(0);
     });
   });

@@ -20,7 +20,9 @@ const empresaSchema = new mongoose.Schema({
         type: Number,
         required: function() {
             return this.cantidadEmpleados > 50;
-        }
+        },
+        min: [1, 'La muestra representativa debe ser al menos 1'],
+        max: [1000, 'La muestra representativa no puede exceder 1000']
     },
     contador: {
         type: Number,
@@ -31,6 +33,14 @@ const empresaSchema = new mongoose.Schema({
         type: String,
         enum: ['basico', 'completo'],
         default: 'basico'
+    },
+    preguntasRequeridas: {
+        type: [Number],
+        default: function() {
+            return this.tipoFormulario === 'completo' ? 
+                Array.from({length: 76}, (_, i) => i + 1) : // 76 preguntas para completo
+                Array.from({length: 46}, (_, i) => i + 1);  // 46 preguntas para básico
+        }
     }
 }, {
     timestamps: true
@@ -38,13 +48,23 @@ const empresaSchema = new mongoose.Schema({
 
 // Validación adicional para empresas grandes
 empresaSchema.pre('save', function(next) {
-    if (this.cantidadEmpleados > 50 && !this.muestraRepresentativa) {
-        const err = new Error('Empresas con más de 50 empleados requieren muestra representativa');
-        next(err);
+    if (this.cantidadEmpleados > 50) {
+        if (!this.muestraRepresentativa) {
+            const err = new Error('Empresas con más de 50 empleados requieren muestra representativa');
+            return next(err);
+        }
+        this.tipoFormulario = 'completo';
     } else {
-        this.tipoFormulario = this.cantidadEmpleados > 50 ? 'completo' : 'basico';
-        next();
+        this.tipoFormulario = 'basico';
+        this.muestraRepresentativa = undefined; // Limpiar si existiera
     }
+    
+    // Actualizar preguntas requeridas según el tipo
+    this.preguntasRequeridas = this.tipoFormulario === 'completo' ? 
+        Array.from({length: 76}, (_, i) => i + 1) : 
+        Array.from({length: 46}, (_, i) => i + 1);
+    
+    next();
 });
 
 const Empresa = mongoose.model('Empresa', empresaSchema);

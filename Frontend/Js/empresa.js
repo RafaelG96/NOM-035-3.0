@@ -247,8 +247,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     mensajeHTML,
                     true,
                     () => {
-                        // Redirigir al formulario correspondiente
-                        window.location.href = formularioInfo.url;
+                        // Eliminamos la redirección al formulario
+                        console.log('Registro completado. No se redirige a ningún formulario.');
                     }
                 );
             })

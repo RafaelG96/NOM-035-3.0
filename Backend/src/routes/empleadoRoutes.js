@@ -36,6 +36,7 @@ router.post('/login', async (req, res) => {
         res.json({
             success: true,
             empresa: {
+                id: empresa._id, // Agregar el ID de la empresa
                 nombre: empresa.nombreEmpresa,
                 cantidadEmpleados: empresa.cantidadEmpleados,
                 tipoFormulario: empresa.tipoFormulario
