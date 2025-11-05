@@ -126,15 +126,22 @@ const server = app.listen(PORT, () => {
 });
 
 // Shutdown graceful
-const gracefulShutdown = () => {
+const gracefulShutdown = async () => {
   console.log(' Recibida señal de terminación, cerrando servidor...');
-  mongoose.connection.close(() => {
+  try {
+    await mongoose.connection.close();
     console.log(' Conexión a MongoDB cerrada');
     server.close(() => {
       console.log(' Servidor detenido');
       process.exit(0);
     });
-  });
+  } catch (error) {
+    console.error(' Error al cerrar la conexión:', error);
+    server.close(() => {
+      console.log(' Servidor detenido');
+      process.exit(1);
+    });
+  }
 };
 
 process.on('SIGINT', gracefulShutdown);

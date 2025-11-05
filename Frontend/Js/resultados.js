@@ -1,4 +1,7 @@
 // resultados.js
+// Variable global para almacenar los datos de respuestas
+let datosRespuestasGlobales = null;
+
 document.addEventListener('DOMContentLoaded', async () => {
   const empresaSelect = document.getElementById('empresaSelect');
   const loadingDiv = document.getElementById('loading');
@@ -46,6 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       const { data } = await response.json();
+      datosRespuestasGlobales = data; // Guardar datos para exportación Excel
       mostrarResultados(data);
 
     } catch (error) {
@@ -268,7 +272,8 @@ function mostrarAccionRiesgo(nivelRiesgo) {
 function getBadgeClass(nivel) {
   if (!nivel) return 'bg-secondary';
   const lower = nivel.toLowerCase();
-  if (lower.includes('muy alto') || lower.includes('alto')) return 'bg-danger';
+  if (lower.includes('muy alto')) return 'bg-danger';
+  if (lower.includes('alto')) return 'bg-warning'; // Naranja para Alto
   if (lower.includes('medio')) return 'bg-warning text-dark';
   if (lower.includes('bajo')) return 'bg-success';
   return 'bg-secondary';
@@ -284,14 +289,157 @@ function getAlertClass(nivel) {
   return 'bg-secondary text-white';
 }
 
-// Mostrar barras de progreso
+// Función para obtener rangos según tipo
+function obtenerRangosParaTipo(nombre, tipo) {
+  if (tipo === 'categoria') {
+    const rangos = {
+      'Ambiente de trabajo': [5, 9, 11, 14],
+      'Factores propios de la actividad': [15, 30, 45, 80],
+      'Organización del tiempo de trabajo': [5, 9, 11, 14],
+      'Liderazgo y relaciones en el trabajo': [14, 29, 42, 58],
+      'Entorno organizacional': [10, 14, 18, 23]
+    };
+    return rangos[nombre] || [0, 0, 0, 0];
+  } else if (tipo === 'dominio') {
+    const rangos = {
+      'Condiciones en el ambiente de trabajo': [5, 9, 11, 14],
+      'Carga de trabajo': [15, 21, 27, 37],
+      'Falta de control sobre el trabajo': [11, 16, 21, 25],
+      'Jornada de trabajo': [1, 4, 6, 9],
+      'Interferencia en la relación trabajo-familia': [4, 8, 11, 14],
+      'Liderazgo': [9, 12, 16, 21],
+      'Relaciones en el trabajo': [10, 13, 17, 21],
+      'Violencia': [7, 10, 13, 16],
+      'Reconocimiento del desempeño': [10, 14, 18, 23],
+      'Insuficiente sentido de pertenencia e inestabilidad': [4, 8, 10, 12]
+    };
+    return rangos[nombre] || [0, 0, 0, 0];
+  }
+  return [0, 0, 0, 0];
+}
+
+// Función para obtener máximo según tipo
+function obtenerMaximoParaTipo(nombre, tipo) {
+  if (tipo === 'categoria') {
+    const maximos = {
+      'Ambiente de trabajo': 14,
+      'Factores propios de la actividad': 80,
+      'Organización del tiempo de trabajo': 14,
+      'Liderazgo y relaciones en el trabajo': 58,
+      'Entorno organizacional': 23
+    };
+    return maximos[nombre] || 50;
+  } else if (tipo === 'dominio') {
+    const maximos = {
+      'Condiciones en el ambiente de trabajo': 14,
+      'Carga de trabajo': 37,
+      'Falta de control sobre el trabajo': 25,
+      'Jornada de trabajo': 9,
+      'Interferencia en la relación trabajo-familia': 14,
+      'Liderazgo': 21,
+      'Relaciones en el trabajo': 21,
+      'Violencia': 16,
+      'Reconocimiento del desempeño': 23,
+      'Insuficiente sentido de pertenencia e inestabilidad': 12
+    };
+    return maximos[nombre] || 30;
+  }
+  return 50;
+}
+
+// Función para obtener mensaje de acción según nivel
+function obtenerMensajeAccion(nivel) {
+  const mensajes = {
+    'Nulo': { icon: 'check-circle', text: 'Monitoreo', color: 'text-success' },
+    'Bajo': { icon: 'check-circle', text: 'Monitoreo', color: 'text-success' },
+    'Medio': { icon: 'info-circle', text: 'Monitoreo continuo', color: 'text-info' },
+    'Alto': { icon: 'exclamation-triangle', text: 'Requiere atención', color: 'text-warning' },
+    'Muy alto': { icon: 'exclamation-circle', text: 'Acción urgente', color: 'text-danger' }
+  };
+  return mensajes[nivel] || { icon: 'info-circle', text: 'Revisar', color: 'text-secondary' };
+}
+
+// Función para crear donut chart
+function crearDonutChart(canvasId, valor, maximo, nombre, nivel, tipo) {
+  const porcentaje = Math.round((valor / maximo) * 100);
+  const rangos = obtenerRangosParaTipo(nombre, tipo);
+  const [rangoNulo, rangoBajo, rangoMedio, rangoAlto] = rangos;
+  
+  // Calcular porcentajes de cada segmento
+  const pctNulo = (rangoNulo / maximo) * 100;
+  const pctBajo = ((rangoBajo - rangoNulo) / maximo) * 100;
+  const pctMedio = ((rangoMedio - rangoBajo) / maximo) * 100;
+  const pctAlto = ((rangoAlto - rangoMedio) / maximo) * 100;
+  const pctMuyAlto = ((maximo - rangoAlto) / maximo) * 100;
+  
+  // Colores para cada segmento
+  const colores = ['#6c757d', '#198754', '#ffc107', '#ff8c00', '#dc3545']; // gris, verde, amarillo, naranja, rojo
+  
+  // Crear datos para el gráfico
+  const data = [pctNulo, pctBajo, pctMedio, pctAlto, pctMuyAlto];
+  
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  
+  return new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: data,
+        backgroundColor: colores,
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '70%',
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          enabled: false
+        }
+      }
+    },
+    plugins: [{
+      id: 'centeredText',
+      beforeDraw: function(chart) {
+        const ctx = chart.ctx;
+        const centerX = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2;
+        const centerY = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2;
+        
+        ctx.save();
+        ctx.font = 'bold 24px Arial';
+        
+        // Color del texto según nivel
+        let colorTexto = '#6c757d';
+        if (nivel === 'Muy alto' || nivel === 'Alto') colorTexto = nivel === 'Muy alto' ? '#dc3545' : '#ff8c00';
+        else if (nivel === 'Medio') colorTexto = '#ffc107';
+        else if (nivel === 'Bajo' || nivel === 'Nulo') colorTexto = '#198754';
+        
+        ctx.fillStyle = colorTexto;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${porcentaje}%`, centerX, centerY);
+        ctx.restore();
+      }
+    }]
+  });
+}
+
+// Mostrar donut charts en lugar de barras
 function renderizarPuntajes(puntajes, maxValue = 50, tipo = 'categoria') {
   if (!puntajes || Object.keys(puntajes).length === 0) {
     return '<p class="text-muted small">No hay datos disponibles</p>';
   }
 
-  return Object.entries(puntajes).map(([nombre, valor]) => {
+  let html = '<div class="donut-chart-grid">';
+  
+  Object.entries(puntajes).forEach(([nombre, valor], index) => {
     let nivel;
+    const maximo = obtenerMaximoParaTipo(nombre, tipo);
+    
     if (tipo === 'categoria') {
       nivel = obtenerNivelPorCategoria(nombre, valor);
     } else if (tipo === 'dominio') {
@@ -299,20 +447,46 @@ function renderizarPuntajes(puntajes, maxValue = 50, tipo = 'categoria') {
     }
 
     const nivelClass = getNivelClass(nivel);
-    const barColor = getBarColor(nivel);
-
-    return `
-      <div class="mb-3">
-        <div class="d-flex justify-content-between mb-1 small">
-          <span>${nombre}</span>
-          <span class="fw-bold ${nivelClass}">${valor} (${nivel})</span>
+    const badgeClass = getBadgeClass(nivel);
+    const mensajeAccion = obtenerMensajeAccion(nivel);
+    const canvasId = `donutChart_${tipo}_${index}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    html += `
+      <div class="donut-chart-wrapper" data-canvas-id="${canvasId}" data-valor="${valor}" data-maximo="${maximo}" data-nombre="${nombre}" data-nivel="${nivel}" data-tipo="${tipo}">
+        <div class="donut-chart-container">
+          <canvas id="${canvasId}"></canvas>
         </div>
-        <div class="progress" style="height: 10px;">
-          <div class="progress-bar ${barColor}" style="width: 100%;" aria-valuenow="${valor}" aria-valuemin="0" aria-valuemax="${maxValue}"></div>
+        <div class="donut-chart-title">${nombre}</div>
+        <div>
+          <span class="badge ${badgeClass} donut-chart-badge" ${nivel === 'Alto' ? 'style="background-color: #ff8c00 !important; color: #fff !important;"' : ''}>${nivel}</span>
+        </div>
+        <div class="donut-chart-score">Puntaje: ${valor} / ${maximo}</div>
+        <div class="donut-chart-action ${mensajeAccion.color}">
+          <i class="fas fa-${mensajeAccion.icon}"></i> ${mensajeAccion.text}
         </div>
       </div>
     `;
-  }).join('');
+  });
+  
+  html += '</div>';
+  
+  // Crear los gráficos después de que el HTML se haya insertado
+  setTimeout(() => {
+    document.querySelectorAll('[data-canvas-id]').forEach(wrapper => {
+      const canvasId = wrapper.getAttribute('data-canvas-id');
+      const valor = parseFloat(wrapper.getAttribute('data-valor'));
+      const maximo = parseFloat(wrapper.getAttribute('data-maximo'));
+      const nombre = wrapper.getAttribute('data-nombre');
+      const nivel = wrapper.getAttribute('data-nivel');
+      const tipo = wrapper.getAttribute('data-tipo');
+      
+      if (document.getElementById(canvasId)) {
+        crearDonutChart(canvasId, valor, maximo, nombre, nivel, tipo);
+      }
+    });
+  }, 200);
+  
+  return html;
 }
 
 // Formatear fechas en formato dd/mm/yyyy
@@ -607,4 +781,137 @@ document.addEventListener("DOMContentLoaded", () => {
 // Soluciona el problema de scroll al cerrar cualquier modal de Bootstrap
 document.addEventListener('hidden.bs.modal', function () {
   document.body.style.overflow = '';
+});
+
+// Función para exportar a Excel
+function exportarAExcel() {
+  if (!datosRespuestasGlobales || !datosRespuestasGlobales.respuestas || datosRespuestasGlobales.respuestas.length === 0) {
+    alert('No hay datos para exportar. Por favor, seleccione una empresa con respuestas.');
+    return;
+  }
+
+  const { empresa, respuestas } = datosRespuestasGlobales;
+  const nombreEmpresa = empresa?.nombreEmpresa || 'Empresa';
+
+  // Crear un libro de trabajo
+  const wb = XLSX.utils.book_new();
+
+  // Hoja 1: Resumen General
+  const resumenData = [
+    ['REPORTE DE RESULTADOS - FORMULARIO PSICOSOCIAL ENTORNO'],
+    ['Empresa', nombreEmpresa],
+    ['Total Encuestas', respuestas.length],
+    ['Puntaje Promedio', datosRespuestasGlobales.resumen?.puntajePromedio || '0'],
+    ['Nivel de Riesgo', datosRespuestasGlobales.resumen?.nivelRiesgo || 'Nulo'],
+    ['Fecha de Actualización', datosRespuestasGlobales.resumen?.ultimaActualizacion ? formatDate(datosRespuestasGlobales.resumen.ultimaActualizacion) : '--/--/----'],
+    [],
+    ['RESUMEN DE ENCUESTAS']
+  ];
+
+  const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
+  XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen');
+
+  // Hoja 2: Respuestas por Encuesta
+  const respuestasData = [
+    ['ID Encuesta', 'Fecha', 'Puntaje Total', 'Nivel de Riesgo', 'Recomendación']
+  ];
+
+  respuestas.forEach((respuesta, index) => {
+    const fecha = formatDate(respuesta.createdAt);
+    const recomendacion = respuesta.recomendacion || obtenerRecomendaciones(respuesta.nivelRiesgo).recomendacion;
+    respuestasData.push([
+      `Encuesta ${index + 1}`,
+      fecha,
+      respuesta.puntajeTotal || 0,
+      respuesta.nivelRiesgo || 'Nulo',
+      recomendacion
+    ]);
+  });
+
+  const wsRespuestas = XLSX.utils.aoa_to_sheet(respuestasData);
+  XLSX.utils.book_append_sheet(wb, wsRespuestas, 'Encuestas');
+
+  // Hoja 3: Puntajes por Categoría
+  const categoriasData = [
+    ['ID Encuesta', 'Fecha', 'Categoría', 'Puntaje', 'Nivel']
+  ];
+
+  respuestas.forEach((respuesta, index) => {
+    const fecha = formatDate(respuesta.createdAt);
+    const puntajesPorCategoria = respuesta.puntajesPorCategoria || {};
+    
+    Object.entries(puntajesPorCategoria).forEach(([categoria, puntaje]) => {
+      const nivel = obtenerNivelPorCategoria(categoria, puntaje);
+      categoriasData.push([
+        `Encuesta ${index + 1}`,
+        fecha,
+        categoria,
+        puntaje,
+        nivel
+      ]);
+    });
+  });
+
+  const wsCategorias = XLSX.utils.aoa_to_sheet(categoriasData);
+  XLSX.utils.book_append_sheet(wb, wsCategorias, 'Categorías');
+
+  // Hoja 4: Puntajes por Dominio
+  const dominiosData = [
+    ['ID Encuesta', 'Fecha', 'Dominio', 'Puntaje', 'Nivel']
+  ];
+
+  respuestas.forEach((respuesta, index) => {
+    const fecha = formatDate(respuesta.createdAt);
+    const puntajesPorDominio = respuesta.puntajesPorDominio || {};
+    
+    Object.entries(puntajesPorDominio).forEach(([dominio, puntaje]) => {
+      const nivel = obtenerNivelPorDominio(dominio, puntaje);
+      dominiosData.push([
+        `Encuesta ${index + 1}`,
+        fecha,
+        dominio,
+        puntaje,
+        nivel
+      ]);
+    });
+  });
+
+  const wsDominios = XLSX.utils.aoa_to_sheet(dominiosData);
+  XLSX.utils.book_append_sheet(wb, wsDominios, 'Dominios');
+
+  // Hoja 5: Respuestas Detalladas por Pregunta
+  const preguntasData = [
+    ['ID Encuesta', 'Fecha', 'Pregunta', 'Respuesta']
+  ];
+
+  respuestas.forEach((respuesta, index) => {
+    const fecha = formatDate(respuesta.createdAt);
+    const preguntas = respuesta.preguntas || {};
+    
+    Object.entries(preguntas).forEach(([pregunta, respuestaPregunta]) => {
+      preguntasData.push([
+        `Encuesta ${index + 1}`,
+        fecha,
+        pregunta.replace('pregunta', 'Pregunta '),
+        respuestaPregunta
+      ]);
+    });
+  });
+
+  const wsPreguntas = XLSX.utils.aoa_to_sheet(preguntasData);
+  XLSX.utils.book_append_sheet(wb, wsPreguntas, 'Respuestas Detalladas');
+
+  // Generar nombre de archivo
+  const nombreArchivo = `Resultados_${nombreEmpresa.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+  // Descargar el archivo
+  XLSX.writeFile(wb, nombreArchivo);
+}
+
+// Event listener para el botón de descarga Excel
+document.addEventListener('DOMContentLoaded', () => {
+  const descargarExcelBtn = document.getElementById('descargarExcel');
+  if (descargarExcelBtn) {
+    descargarExcelBtn.addEventListener('click', exportarAExcel);
+  }
 });

@@ -1,3 +1,6 @@
+// Variable global para almacenar los datos de respuestas
+let datosRespuestasTrabajoGlobales = null;
+
 document.addEventListener('DOMContentLoaded', async () => {
   const empresaSelect = document.getElementById('empresaSelect');
   const loadingDiv = document.getElementById('loading');
@@ -63,6 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       const { data } = await response.json();
+      datosRespuestasTrabajoGlobales = data; // Guardar datos para exportación Excel
       mostrarResultadosTrabajo(data);
 
     } catch (error) {
@@ -331,7 +335,112 @@ const ESTRUCTURA = {
     }
 };
 
-// Actualizar las funciones de renderizado para incluir todos los dominios
+// Función para obtener rangos de categorías
+function obtenerRangosCategoria(nombre) {
+  const rangos = {
+    'Ambiente de trabajo': [3, 5, 7, 9],
+    'Factores propios de la actividad': [10, 20, 30, 40],
+    'Organización del tiempo de trabajo': [4, 8, 9, 12],
+    'Liderazgo y relaciones en el trabajo': [10, 18, 28, 38],
+    'Falta de control sobre el trabajo': [5, 10, 15, 20]
+  };
+  return rangos[nombre] || [0, 0, 0, 0];
+}
+
+// Función para obtener máximo de categorías
+function obtenerMaximoCategoria(nombre) {
+  const maximos = {
+    'Ambiente de trabajo': 9,
+    'Factores propios de la actividad': 40,
+    'Organización del tiempo de trabajo': 12,
+    'Liderazgo y relaciones en el trabajo': 38,
+    'Falta de control sobre el trabajo': 20
+  };
+  return maximos[nombre] || 50;
+}
+
+// Función para obtener mensaje de acción según nivel
+function obtenerMensajeAccionTrabajo(nivel) {
+  const mensajes = {
+    'Nulo o despreciable': { icon: 'check-circle', text: 'Monitoreo', color: 'text-success' },
+    'Bajo': { icon: 'check-circle', text: 'Monitoreo', color: 'text-success' },
+    'Medio': { icon: 'info-circle', text: 'Monitoreo continuo', color: 'text-info' },
+    'Alto': { icon: 'exclamation-triangle', text: 'Requiere atención', color: 'text-warning' },
+    'Muy alto': { icon: 'exclamation-circle', text: 'Acción urgente', color: 'text-danger' }
+  };
+  return mensajes[nivel] || { icon: 'info-circle', text: 'Revisar', color: 'text-secondary' };
+}
+
+// Función para crear donut chart
+function crearDonutChartTrabajo(canvasId, valor, maximo, nombre, nivel, tipo) {
+  const porcentaje = Math.round((valor / maximo) * 100);
+  const rangos = tipo === 'categoria' ? obtenerRangosCategoria(nombre) : obtenerRangosDominio(nombre);
+  const [rangoNulo, rangoBajo, rangoMedio, rangoAlto] = rangos;
+  
+  // Calcular porcentajes de cada segmento
+  const pctNulo = (rangoNulo / maximo) * 100;
+  const pctBajo = ((rangoBajo - rangoNulo) / maximo) * 100;
+  const pctMedio = ((rangoMedio - rangoBajo) / maximo) * 100;
+  const pctAlto = ((rangoAlto - rangoMedio) / maximo) * 100;
+  const pctMuyAlto = ((maximo - rangoAlto) / maximo) * 100;
+  
+  // Colores para cada segmento
+  const colores = ['#6c757d', '#198754', '#ffc107', '#ff8c00', '#dc3545'];
+  
+  // Crear datos para el gráfico
+  const data = [pctNulo, pctBajo, pctMedio, pctAlto, pctMuyAlto];
+  
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  
+  return new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: data,
+        backgroundColor: colores,
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '70%',
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          enabled: false
+        }
+      }
+    },
+    plugins: [{
+      id: 'centeredText',
+      beforeDraw: function(chart) {
+        const ctx = chart.ctx;
+        const centerX = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2;
+        const centerY = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2;
+        
+        ctx.save();
+        ctx.font = 'bold 24px Arial';
+        
+        // Color del texto según nivel
+        let colorTexto = '#6c757d';
+        if (nivel === 'Muy alto' || nivel === 'Alto') colorTexto = nivel === 'Muy alto' ? '#dc3545' : '#ff8c00';
+        else if (nivel === 'Medio') colorTexto = '#ffc107';
+        else if (nivel === 'Bajo' || nivel === 'Nulo o despreciable') colorTexto = '#198754';
+        
+        ctx.fillStyle = colorTexto;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${porcentaje}%`, centerX, centerY);
+        ctx.restore();
+      }
+    }]
+  });
+}
+
+// Actualizar las funciones de renderizado para usar donut charts
 function renderizarCategorias(categorias) {
   const PUNTAJES_MAXIMOS_CATEGORIAS = {
     'Ambiente de trabajo': 9,
@@ -341,23 +450,51 @@ function renderizarCategorias(categorias) {
     'Falta de control sobre el trabajo': 20
   };
 
-  const itemsHTML = categorias
-    .filter(cat => PUNTAJES_MAXIMOS_CATEGORIAS[cat.nombre])
-    .map(cat => {
-      const nivel = determinarNivelCategoria(cat.puntaje, cat.nombre);
+  let html = '<div class="donut-chart-grid">';
 
-      return `
-        <div class="mb-3">
-          <div class="d-flex justify-content-between mb-1 small">
-            <span>${cat.nombre}</span>
-            <span class="fw-bold ${getNivelClass(nivel)}">${cat.puntaje} (${nivel})</span>
+  categorias
+    .filter(cat => PUNTAJES_MAXIMOS_CATEGORIAS[cat.nombre])
+    .forEach((cat, index) => {
+      const nivel = determinarNivelCategoria(cat.puntaje, cat.nombre);
+      const maximo = obtenerMaximoCategoria(cat.nombre);
+      const badgeClass = getBadgeClass(nivel);
+      const mensajeAccion = obtenerMensajeAccionTrabajo(nivel);
+      const canvasId = `donutChart_categoria_${index}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      html += `
+        <div class="donut-chart-wrapper" data-canvas-id="${canvasId}" data-valor="${cat.puntaje}" data-maximo="${maximo}" data-nombre="${cat.nombre}" data-nivel="${nivel}" data-tipo="categoria">
+          <div class="donut-chart-container">
+            <canvas id="${canvasId}"></canvas>
           </div>
-          <div class="progress" style="height: 10px;">
-            <div class="progress-bar ${getBarColor(nivel)}" style="width: 100%;"></div>
+          <div class="donut-chart-title">${cat.nombre}</div>
+          <div>
+            <span class="badge ${badgeClass} donut-chart-badge" ${nivel === 'Alto' ? 'style="background-color: #ff8c00 !important; color: #fff !important;"' : ''}>${nivel}</span>
+          </div>
+          <div class="donut-chart-score">Puntaje: ${cat.puntaje} / ${maximo}</div>
+          <div class="donut-chart-action ${mensajeAccion.color}">
+            <i class="fas fa-${mensajeAccion.icon}"></i> ${mensajeAccion.text}
           </div>
         </div>
       `;
-    }).join('');
+    });
+
+  html += '</div>';
+
+  // Crear los gráficos después de que el HTML se haya insertado
+  setTimeout(() => {
+    document.querySelectorAll('[data-canvas-id]').forEach(wrapper => {
+      const canvasId = wrapper.getAttribute('data-canvas-id');
+      const valor = parseFloat(wrapper.getAttribute('data-valor'));
+      const maximo = parseFloat(wrapper.getAttribute('data-maximo'));
+      const nombre = wrapper.getAttribute('data-nombre');
+      const nivel = wrapper.getAttribute('data-nivel');
+      const tipo = wrapper.getAttribute('data-tipo');
+      
+      if (document.getElementById(canvasId) && tipo === 'categoria') {
+        crearDonutChartTrabajo(canvasId, valor, maximo, nombre, nivel, tipo);
+      }
+    });
+  }, 200);
 
   return `
     <div class="card card-section mb-4">
@@ -365,10 +502,46 @@ function renderizarCategorias(categorias) {
         <h6 class="mb-0 text-primary">Categorías</h6>
       </div>
       <div class="card-body">
-        ${itemsHTML || '<p class="text-muted small">No hay datos de categorías disponibles</p>'}
+        ${html || '<p class="text-muted small">No hay datos de categorías disponibles</p>'}
       </div>
     </div>
   `;
+}
+
+// Función para obtener rangos de dominios
+function obtenerRangosDominio(nombre) {
+  const rangos = {
+    'Condiciones en el ambiente de trabajo': [3, 5, 7, 9],
+    'Carga de trabajo': [12, 18, 20, 24],
+    'Cargas psicológicas emocionales': [3, 6, 9, 12],
+    'Jornada de trabajo': [1, 2, 4, 9],
+    'Interferencia en la relación trabajo-familia': [1, 2, 4, 9],
+    'Liderazgo': [5, 10, 15, 20], // 5 preguntas × 4 puntos máximo = 20 puntos máximo
+    'Relaciones en el trabajo': [5, 8, 11, 14],
+    'Violencia': [7, 10, 13, 16],
+    'Falta de control y autonomía sobre el trabajo': [3, 6, 9, 12],
+    'Limitada o nula posibilidad de desarrollo': [2, 4, 6, 8],
+    'Limitada o inexistente capacitación': [2, 4, 6, 8]
+  };
+  return rangos[nombre] || [0, 0, 0, 0];
+}
+
+// Función para obtener máximo de dominios
+function obtenerMaximoDominio(nombre) {
+  const maximos = {
+    'Condiciones en el ambiente de trabajo': 9,
+    'Carga de trabajo': 24,
+    'Cargas psicológicas emocionales': 12,
+    'Jornada de trabajo': 9,
+    'Interferencia en la relación trabajo-familia': 9,
+    'Liderazgo': 20, // 5 preguntas × 4 puntos máximo = 20 puntos máximo
+    'Relaciones en el trabajo': 14,
+    'Violencia': 16,
+    'Falta de control y autonomía sobre el trabajo': 12,
+    'Limitada o nula posibilidad de desarrollo': 8,
+    'Limitada o inexistente capacitación': 8
+  };
+  return maximos[nombre] || 30;
 }
 
 function renderizarDominios(dominios) {
@@ -378,7 +551,7 @@ function renderizarDominios(dominios) {
     'Cargas psicológicas emocionales': 12,
     'Jornada de trabajo': 9,
     'Interferencia en la relación trabajo-familia': 9,
-    'Liderazgo': 11,
+    'Liderazgo': 20, // Corregido: 5 preguntas × 4 puntos máximo = 20 puntos máximo
     'Relaciones en el trabajo': 14,
     'Violencia': 16,
     'Falta de control y autonomía sobre el trabajo': 12,
@@ -386,31 +559,52 @@ function renderizarDominios(dominios) {
     'Limitada o inexistente capacitación': 8
   };
 
-  // Depurar dominios no reconocidos
-  dominios.forEach(dom => {
-    if (!PUNTAJES_MAXIMOS_DOMINIOS[dom.nombre]) {
-      console.warn(`Dominio no reconocido: ${dom.nombre}`);
-    }
-  });
+  let html = '<div class="donut-chart-grid">';
 
-  const itemsHTML = dominios
-    .filter(dom => PUNTAJES_MAXIMOS_DOMINIOS[dom.nombre]) // Filtrar solo dominios reconocidos
-    .map(dom => {
+  dominios
+    .filter(dom => PUNTAJES_MAXIMOS_DOMINIOS[dom.nombre])
+    .forEach((dom, index) => {
       const nivel = determinarNivelDominio(dom.puntaje, dom.nombre);
+      const maximo = obtenerMaximoDominio(dom.nombre);
+      const badgeClass = getBadgeClass(nivel);
+      const mensajeAccion = obtenerMensajeAccionTrabajo(nivel);
+      const canvasId = `donutChart_dominio_${index}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      return `
-        <div class="mb-3">
-          <div class="d-flex justify-content-between mb-1 small">
-            <span>${dom.nombre}</span>
-            <span class="fw-bold ${getNivelClass(nivel)}">${dom.puntaje} (${nivel})</span>
+      html += `
+        <div class="donut-chart-wrapper" data-canvas-id="${canvasId}" data-valor="${dom.puntaje}" data-maximo="${maximo}" data-nombre="${dom.nombre}" data-nivel="${nivel}" data-tipo="dominio">
+          <div class="donut-chart-container">
+            <canvas id="${canvasId}"></canvas>
           </div>
-          <div class="progress" style="height: 10px;">
-            <div class="progress-bar ${getBarColor(nivel)}" style="width: 100%;"></div>
+          <div class="donut-chart-title">${dom.nombre}</div>
+          <div>
+            <span class="badge ${badgeClass} donut-chart-badge" ${nivel === 'Alto' ? 'style="background-color: #ff8c00 !important; color: #fff !important;"' : ''}>${nivel}</span>
           </div>
-          <p class="small text-muted mt-1 mb-0">${getInterpretacionDominio(dom.nombre, dom.puntaje)}</p>
+          <div class="donut-chart-score">Puntaje: ${dom.puntaje} / ${maximo}</div>
+          <div class="donut-chart-action ${mensajeAccion.color}">
+            <i class="fas fa-${mensajeAccion.icon}"></i> ${mensajeAccion.text}
+          </div>
+          <p class="small text-muted mt-2 mb-0">${getInterpretacionDominio(dom.nombre, dom.puntaje)}</p>
         </div>
       `;
-    }).join('');
+    });
+
+  html += '</div>';
+
+  // Crear los gráficos después de que el HTML se haya insertado
+  setTimeout(() => {
+    document.querySelectorAll('[data-canvas-id]').forEach(wrapper => {
+      const canvasId = wrapper.getAttribute('data-canvas-id');
+      const valor = parseFloat(wrapper.getAttribute('data-valor'));
+      const maximo = parseFloat(wrapper.getAttribute('data-maximo'));
+      const nombre = wrapper.getAttribute('data-nombre');
+      const nivel = wrapper.getAttribute('data-nivel');
+      const tipo = wrapper.getAttribute('data-tipo');
+      
+      if (document.getElementById(canvasId) && tipo === 'dominio') {
+        crearDonutChartTrabajo(canvasId, valor, maximo, nombre, nivel, tipo);
+      }
+    });
+  }, 200);
 
   return `
     <div class="card card-section mb-4">
@@ -418,7 +612,7 @@ function renderizarDominios(dominios) {
         <h6 class="mb-0 text-primary">Dominios</h6>
       </div>
       <div class="card-body">
-        ${itemsHTML || '<p class="text-muted small">No hay datos de dominios disponibles</p>'}
+        ${html || '<p class="text-muted small">No hay datos de dominios disponibles</p>'}
       </div>
     </div>
   `;
@@ -521,7 +715,7 @@ function determinarNivelDominio(puntaje, dominio) {
     'Cargas psicológicas emocionales': [3, 6 ,9 ,12],
     'Jornada de trabajo': [1, 2, 4, 9],
     'Interferencia en la relación trabajo-familia': [1, 2, 4, 9],
-    'Liderazgo': [3, 5, 8, 11],
+    'Liderazgo': [5, 10, 15, 20], // Corregido: 5 preguntas × 4 puntos = 20 máximo
     'Relaciones en el trabajo': [5, 8, 11, 14],
     'Violencia': [7, 10, 13, 16],
     'Falta de control y autonomía sobre el trabajo': [3, 6, 9, 12],
@@ -582,7 +776,7 @@ function getBadgeClass(nivel) {
     case 'nulo o despreciable': return 'bg-secondary';
     case 'bajo': return 'bg-success';
     case 'medio': return 'bg-warning text-dark';
-    case 'alto': return 'bg-danger';
+    case 'alto': return 'bg-warning'; // Naranja para Alto (usaremos estilo inline)
     case 'muy alto': return 'bg-danger';
     default: return 'bg-secondary';
   }
@@ -834,4 +1028,149 @@ document.getElementById('btnDescargarPDF').addEventListener('click', () => {
 // Soluciona el problema de scroll al cerrar cualquier modal de Bootstrap
 document.addEventListener('hidden.bs.modal', function () {
   document.body.style.overflow = '';
+});
+
+// Función para exportar a Excel
+function exportarAExcelTrabajo() {
+  if (!datosRespuestasTrabajoGlobales || !datosRespuestasTrabajoGlobales.resultados || datosRespuestasTrabajoGlobales.resultados.length === 0) {
+    alert('No hay datos para exportar. Por favor, seleccione una empresa con respuestas.');
+    return;
+  }
+
+  const { empresa, resultados } = datosRespuestasTrabajoGlobales;
+  const nombreEmpresa = empresa?.nombreEmpresa || 'Empresa';
+
+  // Calcular estadísticas
+  const totalEncuestas = resultados.length;
+  const totalPuntaje = resultados.reduce((sum, respuesta) => sum + (respuesta.puntajeTotal || 0), 0);
+  const promedioPuntaje = (totalPuntaje / totalEncuestas).toFixed(2);
+  const nivelRiesgoGeneral = determinarNivelRiesgoGeneral(promedioPuntaje);
+
+  // Crear un libro de trabajo
+  const wb = XLSX.utils.book_new();
+
+  // Hoja 1: Resumen General
+  const resumenData = [
+    ['REPORTE DE RESULTADOS - FORMULARIO PSICOSOCIAL TRABAJO'],
+    ['Empresa', nombreEmpresa],
+    ['Total Encuestas', totalEncuestas],
+    ['Total Empleados', empresa?.cantidadEmpleados || 0],
+    ['Puntaje Promedio', promedioPuntaje],
+    ['Nivel de Riesgo', nivelRiesgoGeneral],
+    ['Fecha de Actualización', resultados.length > 0 ? formatDate(resultados.reduce((latest, respuesta) => {
+      const fechaActual = new Date(respuesta.updatedAt || respuesta.createdAt);
+      return fechaActual > latest ? fechaActual : latest;
+    }, new Date(0))) : '--/--/----'],
+    [],
+    ['RESUMEN DE ENCUESTAS']
+  ];
+
+  const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
+  XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen');
+
+  // Hoja 2: Respuestas por Encuesta
+  const respuestasData = [
+    ['ID Encuesta', 'Fecha', 'Puntaje Total', 'Nivel de Riesgo']
+  ];
+
+  resultados.forEach((respuesta, index) => {
+    const fecha = formatDate(respuesta.createdAt);
+    respuestasData.push([
+      `Encuesta ${index + 1}`,
+      fecha,
+      respuesta.puntajeTotal || 0,
+      respuesta.nivelRiesgo || 'Nulo o despreciable'
+    ]);
+  });
+
+  const wsRespuestas = XLSX.utils.aoa_to_sheet(respuestasData);
+  XLSX.utils.book_append_sheet(wb, wsRespuestas, 'Encuestas');
+
+  // Hoja 3: Puntajes por Categoría
+  const categoriasData = [
+    ['ID Encuesta', 'Fecha', 'Categoría', 'Puntaje', 'Nivel']
+  ];
+
+  resultados.forEach((respuesta, index) => {
+    const fecha = formatDate(respuesta.createdAt);
+    const categorias = respuesta.categorias || [];
+    
+    categorias.forEach(categoria => {
+      const nivel = determinarNivelCategoria(categoria.puntaje, categoria.nombre);
+      categoriasData.push([
+        `Encuesta ${index + 1}`,
+        fecha,
+        categoria.nombre,
+        categoria.puntaje,
+        nivel
+      ]);
+    });
+  });
+
+  const wsCategorias = XLSX.utils.aoa_to_sheet(categoriasData);
+  XLSX.utils.book_append_sheet(wb, wsCategorias, 'Categorías');
+
+  // Hoja 4: Puntajes por Dominio
+  const dominiosData = [
+    ['ID Encuesta', 'Fecha', 'Dominio', 'Puntaje', 'Nivel']
+  ];
+
+  resultados.forEach((respuesta, index) => {
+    const fecha = formatDate(respuesta.createdAt);
+    const dominios = respuesta.dominios || [];
+    
+    dominios.forEach(dominio => {
+      const nivel = determinarNivelDominio(dominio.puntaje, dominio.nombre);
+      dominiosData.push([
+        `Encuesta ${index + 1}`,
+        fecha,
+        dominio.nombre,
+        dominio.puntaje,
+        nivel
+      ]);
+    });
+  });
+
+  const wsDominios = XLSX.utils.aoa_to_sheet(dominiosData);
+  XLSX.utils.book_append_sheet(wb, wsDominios, 'Dominios');
+
+  // Hoja 5: Respuestas Detalladas por Pregunta
+  const preguntasData = [
+    ['ID Encuesta', 'Fecha', 'Pregunta', 'Respuesta', 'Valor Numérico']
+  ];
+
+  resultados.forEach((respuesta, index) => {
+    const fecha = formatDate(respuesta.createdAt);
+    const preguntas = respuesta.preguntas || {};
+    
+    Object.entries(preguntas).forEach(([pregunta, respuestaPregunta]) => {
+      if (pregunta.startsWith('pregunta')) {
+        const valorNumerico = convertirValorANumerico(respuestaPregunta);
+        preguntasData.push([
+          `Encuesta ${index + 1}`,
+          fecha,
+          pregunta.replace('pregunta', 'Pregunta '),
+          convertirValorARespuesta(respuestaPregunta),
+          valorNumerico
+        ]);
+      }
+    });
+  });
+
+  const wsPreguntas = XLSX.utils.aoa_to_sheet(preguntasData);
+  XLSX.utils.book_append_sheet(wb, wsPreguntas, 'Respuestas Detalladas');
+
+  // Generar nombre de archivo
+  const nombreArchivo = `Resultados_Trabajo_${nombreEmpresa.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+  // Descargar el archivo
+  XLSX.writeFile(wb, nombreArchivo);
+}
+
+// Event listener para el botón de descarga Excel
+document.addEventListener('DOMContentLoaded', () => {
+  const descargarExcelBtn = document.getElementById('descargarExcel');
+  if (descargarExcelBtn) {
+    descargarExcelBtn.addEventListener('click', exportarAExcelTrabajo);
+  }
 });

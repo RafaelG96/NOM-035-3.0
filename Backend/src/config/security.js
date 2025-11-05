@@ -21,7 +21,14 @@ const securityConfig = {
   
   // Configuración de CORS
   cors: {
-    origin: ['http://localhost:5500', 'http://127.0.0.1:5500'],
+    origin: [
+      'http://localhost:5500',      // Frontend HTML original (Live Server)
+      'http://127.0.0.1:5500',
+      'http://localhost:5173',       // Frontend React (Vite dev server - puerto por defecto)
+      'http://127.0.0.1:5173',
+      'http://localhost:5174',       // Frontend React (Vite dev server - puerto alternativo)
+      'http://127.0.0.1:5174'
+    ],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,

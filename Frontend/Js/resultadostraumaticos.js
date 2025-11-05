@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       const { data: respuestas } = await response.json();
+      nombreEmpresaActual = empresaNombre; // Guardar nombre de empresa para exportación Excel
       mostrarResultadosTrauma(respuestas);
 
     } catch (error) {
@@ -77,6 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // 1. Variables globales para almacenar los datos actuales
 let datosActuales = [];
+let nombreEmpresaActual = '';
 
 // Mostrar resultados del cuestionario de trauma
 function mostrarResultadosTrauma(data) {
@@ -153,7 +155,8 @@ function mostrarResultadosTrauma(data) {
 
   datosActuales = data; // Guardar para PDF
   document.getElementById('previsualizarPdfBtn').classList.toggle('d-none', !data || data.length === 0);
-  document.getElementById('descargarPdfBtn').classList.add('d-none');
+  document.getElementById('descargarPdfBtn').classList.toggle('d-none', !data || data.length === 0);
+  document.getElementById('descargarExcel').classList.toggle('d-none', !data || data.length === 0);
 
   resultadosContainer.classList.remove('d-none');
 }
@@ -251,3 +254,109 @@ function mostrarModalSinDatos(mensaje) {
   const modal = new bootstrap.Modal(document.getElementById('sinDatosModal'));
   modal.show();
 }
+
+// Función para exportar a Excel
+function exportarAExcelTrauma() {
+  if (!datosActuales || datosActuales.length === 0) {
+    alert('No hay datos para exportar. Por favor, seleccione una empresa con respuestas.');
+    return;
+  }
+
+  const nombreEmpresa = nombreEmpresaActual || 'Empresa';
+
+  // Calcular estadísticas
+  const totalEncuestas = datosActuales.length;
+
+  // Crear un libro de trabajo
+  const wb = XLSX.utils.book_new();
+
+  // Hoja 1: Resumen General
+  const resumenData = [
+    ['REPORTE DE RESULTADOS - CUESTIONARIO DE TRAUMA'],
+    ['Empresa', nombreEmpresa],
+    ['Total Encuestas', totalEncuestas],
+    ['Fecha de Actualización', datosActuales.length > 0 ? formatDate(datosActuales.reduce((latest, respuesta) => {
+      const fechaActual = new Date(respuesta.updatedAt || respuesta.createdAt);
+      return fechaActual > latest ? fechaActual : latest;
+    }, new Date(0))) : '--/--/----'],
+    [],
+    ['RESUMEN DE ENCUESTAS']
+  ];
+
+  const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
+  XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen');
+
+  // Hoja 2: Respuestas por Encuesta
+  const respuestasData = [
+    ['ID Encuesta', 'Fecha', 'Identificador Anónimo']
+  ];
+
+  datosActuales.forEach((respuesta, index) => {
+    const fecha = formatDate(respuesta.createdAt);
+    respuestasData.push([
+      `Encuesta ${index + 1}`,
+      fecha,
+      respuesta.identificadorAnonimo || 'N/A'
+    ]);
+  });
+
+  const wsRespuestas = XLSX.utils.aoa_to_sheet(respuestasData);
+  XLSX.utils.book_append_sheet(wb, wsRespuestas, 'Encuestas');
+
+  // Hoja 3: Respuestas Detalladas por Pregunta
+  const preguntasData = [
+    ['ID Encuesta', 'Fecha', 'Pregunta', 'Respuesta']
+  ];
+
+  datosActuales.forEach((respuesta, index) => {
+    const fecha = formatDate(respuesta.createdAt);
+    const respuestas = respuesta.respuestas || [];
+    
+    respuestas.forEach(r => {
+      preguntasData.push([
+        `Encuesta ${index + 1}`,
+        fecha,
+        r.pregunta,
+        r.respuesta
+      ]);
+    });
+  });
+
+  const wsPreguntas = XLSX.utils.aoa_to_sheet(preguntasData);
+  XLSX.utils.book_append_sheet(wb, wsPreguntas, 'Respuestas Detalladas');
+
+  // Hoja 4: Razones de Evaluación
+  const razonesData = [
+    ['ID Encuesta', 'Fecha', 'Razón de Evaluación']
+  ];
+
+  datosActuales.forEach((respuesta, index) => {
+    const fecha = formatDate(respuesta.createdAt);
+    const razonesEvaluacion = respuesta.razonesEvaluacion || [];
+    
+    razonesEvaluacion.forEach(razon => {
+      razonesData.push([
+        `Encuesta ${index + 1}`,
+        fecha,
+        razon
+      ]);
+    });
+  });
+
+  const wsRazones = XLSX.utils.aoa_to_sheet(razonesData);
+  XLSX.utils.book_append_sheet(wb, wsRazones, 'Razones de Evaluación');
+
+  // Generar nombre de archivo
+  const nombreArchivo = `Resultados_Trauma_${nombreEmpresa.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+  // Descargar el archivo
+  XLSX.writeFile(wb, nombreArchivo);
+}
+
+// Event listener para el botón de descarga Excel
+document.addEventListener('DOMContentLoaded', () => {
+  const descargarExcelBtn = document.getElementById('descargarExcel');
+  if (descargarExcelBtn) {
+    descargarExcelBtn.addEventListener('click', exportarAExcelTrauma);
+  }
+});
