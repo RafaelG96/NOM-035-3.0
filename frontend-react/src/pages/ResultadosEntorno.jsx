@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { psicosocialAPI, empresaAPI } from '../services/api'
 import PuntajesGrid from '../components/PuntajesGrid'
+import jsPDF from 'jspdf'
+import * as XLSX from 'xlsx'
 
 function ResultadosEntorno() {
   const navigate = useNavigate()
@@ -170,6 +172,219 @@ function ResultadosEntorno() {
     return recomendaciones[nivelRiesgo] || 'No se pudo determinar una recomendación para este nivel de riesgo'
   }
 
+  // Verificar si todos los formularios están completos
+  const verificarFormulariosCompletos = () => {
+    if (!resultados || !resultados.data) return false
+    const { resumen, empresa } = resultados.data
+    if (!resumen || !empresa) return false
+    
+    // Extraer completadas y total del formato "X/Y"
+    const [completadas, total] = (resumen.progreso || '0/0').split('/').map(Number)
+    return completadas >= total
+  }
+
+  // Función para descargar PDF
+  const handleDescargarPDF = () => {
+    if (!verificarFormulariosCompletos()) {
+      alert('No se puede descargar el PDF. Debe completar todos los formularios primero.')
+      return
+    }
+
+    if (!resultados || !resultados.data) {
+      alert('No hay datos para exportar.')
+      return
+    }
+
+    const { empresa, respuestas, resumen } = resultados.data
+    const doc = new jsPDF()
+
+    // Título
+    doc.setFontSize(16)
+    doc.text('Resultados de Encuestas - Entorno', 10, 10)
+
+    // Datos generales
+    doc.setFontSize(12)
+    let y = 20
+    doc.text(`Empresa: ${empresa?.nombreEmpresa || 'N/A'}`, 10, y)
+    y += 10
+    doc.text(`Total Encuestas: ${resumen?.progreso || '0/0'}`, 10, y)
+    y += 10
+    doc.text(`Puntaje Promedio: ${resumen?.puntajePromedio || 0}`, 10, y)
+    y += 10
+    doc.text(`Nivel de Riesgo: ${resumen?.nivelRiesgo || 'Nulo'}`, 10, y)
+    y += 10
+    doc.text(`Última Actualización: ${formatDate(resumen?.ultimaActualizacion)}`, 10, y)
+    y += 15
+
+    // Encuestas individuales
+    respuestas.forEach((respuesta, index) => {
+      if (y > 270) {
+        doc.addPage()
+        y = 10
+      }
+
+      doc.setFontSize(14)
+      doc.text(`Encuesta ${index + 1}: ${formatDate(respuesta.createdAt)}`, 10, y)
+      y += 10
+
+      doc.setFontSize(12)
+      doc.text(`Puntaje Total: ${respuesta.puntajeTotal || 0}`, 10, y)
+      y += 10
+      doc.text(`Nivel de Riesgo: ${respuesta.nivelRiesgo || 'Nulo'}`, 10, y)
+      y += 10
+
+      // Puntajes por Categoría
+      doc.setFontSize(11)
+      doc.text('Puntajes por Categoría:', 10, y)
+      y += 8
+      if (respuesta.puntajesPorCategoria) {
+        Object.entries(respuesta.puntajesPorCategoria).forEach(([categoria, puntaje]) => {
+          doc.text(`- ${categoria}: ${puntaje}`, 15, y)
+          y += 7
+        })
+      }
+
+      // Puntajes por Dominio
+      doc.text('Puntajes por Dominio:', 10, y)
+      y += 8
+      if (respuesta.puntajesPorDominio) {
+        Object.entries(respuesta.puntajesPorDominio).forEach(([dominio, puntaje]) => {
+          doc.text(`- ${dominio}: ${puntaje}`, 15, y)
+          y += 7
+        })
+      }
+
+      y += 10
+    })
+
+    // Guardar PDF
+    const nombreArchivo = `Resultados_Entorno_${empresa?.nombreEmpresa?.replace(/[^a-zA-Z0-9]/g, '_') || 'Empresa'}_${new Date().toISOString().split('T')[0]}.pdf`
+    doc.save(nombreArchivo)
+  }
+
+  // Función para descargar Excel
+  const handleDescargarExcel = () => {
+    if (!verificarFormulariosCompletos()) {
+      alert('No se puede descargar el Excel. Debe completar todos los formularios primero.')
+      return
+    }
+
+    if (!resultados || !resultados.data) {
+      alert('No hay datos para exportar.')
+      return
+    }
+
+    const { empresa, respuestas, resumen } = resultados.data
+    const wb = XLSX.utils.book_new()
+
+    // Hoja 1: Resumen General
+    const resumenData = [
+      ['REPORTE DE RESULTADOS - FORMULARIO PSICOSOCIAL ENTORNO'],
+      ['Empresa', empresa?.nombreEmpresa || 'N/A'],
+      ['Total Encuestas', resumen?.progreso || '0/0'],
+      ['Puntaje Promedio', resumen?.puntajePromedio || 0],
+      ['Nivel de Riesgo', resumen?.nivelRiesgo || 'Nulo'],
+      ['Fecha de Actualización', resumen?.ultimaActualizacion ? formatDate(resumen.ultimaActualizacion) : '--/--/----'],
+      [],
+      ['RESUMEN DE ENCUESTAS']
+    ]
+
+    const wsResumen = XLSX.utils.aoa_to_sheet(resumenData)
+    XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen')
+
+    // Hoja 2: Respuestas por Encuesta
+    const respuestasData = [
+      ['ID Encuesta', 'Fecha', 'Puntaje Total', 'Nivel de Riesgo', 'Recomendación']
+    ]
+
+    respuestas.forEach((respuesta, index) => {
+      const fecha = formatDate(respuesta.createdAt)
+      const recomendacion = respuesta.recomendacion || obtenerRecomendaciones(respuesta.nivelRiesgo)
+      respuestasData.push([
+        `Encuesta ${index + 1}`,
+        fecha,
+        respuesta.puntajeTotal || 0,
+        respuesta.nivelRiesgo || 'Nulo',
+        recomendacion
+      ])
+    })
+
+    const wsRespuestas = XLSX.utils.aoa_to_sheet(respuestasData)
+    XLSX.utils.book_append_sheet(wb, wsRespuestas, 'Encuestas')
+
+    // Hoja 3: Puntajes por Categoría
+    const categoriasData = [
+      ['ID Encuesta', 'Fecha', 'Categoría', 'Puntaje']
+    ]
+
+    respuestas.forEach((respuesta, index) => {
+      const fecha = formatDate(respuesta.createdAt)
+      const puntajesPorCategoria = respuesta.puntajesPorCategoria || {}
+      
+      Object.entries(puntajesPorCategoria).forEach(([categoria, puntaje]) => {
+        categoriasData.push([
+          `Encuesta ${index + 1}`,
+          fecha,
+          categoria,
+          puntaje
+        ])
+      })
+    })
+
+    const wsCategorias = XLSX.utils.aoa_to_sheet(categoriasData)
+    XLSX.utils.book_append_sheet(wb, wsCategorias, 'Categorías')
+
+    // Hoja 4: Puntajes por Dominio
+    const dominiosData = [
+      ['ID Encuesta', 'Fecha', 'Dominio', 'Puntaje']
+    ]
+
+    respuestas.forEach((respuesta, index) => {
+      const fecha = formatDate(respuesta.createdAt)
+      const puntajesPorDominio = respuesta.puntajesPorDominio || {}
+      
+      Object.entries(puntajesPorDominio).forEach(([dominio, puntaje]) => {
+        dominiosData.push([
+          `Encuesta ${index + 1}`,
+          fecha,
+          dominio,
+          puntaje
+        ])
+      })
+    })
+
+    const wsDominios = XLSX.utils.aoa_to_sheet(dominiosData)
+    XLSX.utils.book_append_sheet(wb, wsDominios, 'Dominios')
+
+    // Hoja 5: Respuestas Detalladas por Pregunta
+    const preguntasData = [
+      ['ID Encuesta', 'Fecha', 'Pregunta', 'Respuesta']
+    ]
+
+    respuestas.forEach((respuesta, index) => {
+      const fecha = formatDate(respuesta.createdAt)
+      const preguntas = respuesta.preguntas || {}
+      
+      Object.entries(preguntas).forEach(([pregunta, respuestaPregunta]) => {
+        preguntasData.push([
+          `Encuesta ${index + 1}`,
+          fecha,
+          pregunta.replace('pregunta', 'Pregunta '),
+          respuestaPregunta
+        ])
+      })
+    })
+
+    const wsPreguntas = XLSX.utils.aoa_to_sheet(preguntasData)
+    XLSX.utils.book_append_sheet(wb, wsPreguntas, 'Respuestas Detalladas')
+
+    // Generar nombre de archivo
+    const nombreArchivo = `Resultados_Entorno_${empresa?.nombreEmpresa?.replace(/[^a-zA-Z0-9]/g, '_') || 'Empresa'}_${new Date().toISOString().split('T')[0]}.xlsx`
+
+    // Descargar el archivo
+    XLSX.writeFile(wb, nombreArchivo)
+  }
+
   return (
     <div className="container py-5">
       <div className="row justify-content-center">
@@ -325,6 +540,26 @@ function ResultadosEntorno() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Botones Descargar PDF y Excel */}
+              <div className="text-end mb-4">
+                <button 
+                  className="btn btn-danger me-2" 
+                  onClick={handleDescargarPDF}
+                  disabled={!verificarFormulariosCompletos()}
+                  title={!verificarFormulariosCompletos() ? 'Debe completar todos los formularios para descargar el PDF' : ''}
+                >
+                  <i className="bi bi-file-pdf me-2"></i>Descargar PDF
+                </button>
+                <button 
+                  className="btn btn-success" 
+                  onClick={handleDescargarExcel}
+                  disabled={!verificarFormulariosCompletos()}
+                  title={!verificarFormulariosCompletos() ? 'Debe completar todos los formularios para descargar el Excel' : ''}
+                >
+                  <i className="bi bi-file-excel me-2"></i>Descargar Excel
+                </button>
               </div>
 
               {/* Necesidad de acción global */}
