@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { psicosocialAPI, empresaAPI } from '../services/api'
 import PuntajesGrid from '../components/PuntajesGrid'
-import DonutChart from '../components/DonutChart'
+import jsPDF from 'jspdf'
+import * as XLSX from 'xlsx'
 
 function ResultadosTrabajo() {
   const navigate = useNavigate()
@@ -225,6 +226,259 @@ function ResultadosTrabajo() {
     return maximos[nombre] || 30
   }
 
+  // Verificar si todos los formularios están completos
+  const verificarFormulariosCompletos = () => {
+    if (!resultados || !resultados.data) return false
+    const { empresa, resultados: respuestas } = resultados.data
+    if (!empresa || !respuestas || respuestas.length === 0) return false
+    
+    // Verificar si todas las encuestas están completas
+    const totalEncuestas = respuestas.length
+    const totalEmpleados = empresa.cantidadEmpleados || 0
+    return totalEncuestas >= totalEmpleados
+  }
+
+  // Función para descargar PDF
+  const handleDescargarPDF = () => {
+    if (!verificarFormulariosCompletos()) {
+      alert('No se puede descargar el PDF. Debe completar todos los formularios primero.')
+      return
+    }
+
+    if (!resultados || !resultados.data) {
+      alert('No hay datos para exportar.')
+      return
+    }
+
+    const { empresa, resultados: respuestas } = resultados.data
+    const doc = new jsPDF()
+
+    // Calcular estadísticas
+    const totalEncuestas = respuestas.length
+    const totalPuntaje = respuestas.reduce((sum, respuesta) => sum + (respuesta.puntajeTotal || 0), 0)
+    const promedioPuntaje = totalEncuestas > 0 ? (totalPuntaje / totalEncuestas).toFixed(2) : 0
+    const nivelRiesgoGeneral = determinarNivelRiesgoGeneral(parseFloat(promedioPuntaje))
+
+    // Título
+    doc.setFontSize(16)
+    doc.text('Resultados de Encuestas - Trabajo', 10, 10)
+
+    // Datos generales
+    doc.setFontSize(12)
+    let y = 20
+    doc.text(`Empresa: ${empresa?.nombreEmpresa || 'N/A'}`, 10, y)
+    y += 10
+    doc.text(`Total Encuestas: ${totalEncuestas}/${empresa?.cantidadEmpleados || 0}`, 10, y)
+    y += 10
+    doc.text(`Puntaje Promedio: ${promedioPuntaje}`, 10, y)
+    y += 10
+    doc.text(`Nivel de Riesgo: ${nivelRiesgoGeneral}`, 10, y)
+    y += 15
+
+    // Encuestas individuales
+    respuestas.forEach((respuesta, index) => {
+      if (y > 270) {
+        doc.addPage()
+        y = 10
+      }
+
+      doc.setFontSize(14)
+      doc.text(`Encuesta ${index + 1}: ${formatDate(respuesta.createdAt)}`, 10, y)
+      y += 10
+
+      doc.setFontSize(12)
+      doc.text(`Puntaje Total: ${respuesta.puntajeTotal || 0}`, 10, y)
+      y += 10
+      doc.text(`Nivel de Riesgo: ${respuesta.nivelRiesgo || 'Nulo o despreciable'}`, 10, y)
+      y += 10
+
+      // Puntajes por Categoría
+      doc.setFontSize(11)
+      doc.text('Puntajes por Categoría:', 10, y)
+      y += 8
+      if (respuesta.categorias && Array.isArray(respuesta.categorias)) {
+        respuesta.categorias.forEach((categoria) => {
+          doc.text(`- ${categoria.nombre}: ${categoria.puntaje}`, 15, y)
+          y += 7
+        })
+      }
+
+      // Puntajes por Dominio
+      doc.text('Puntajes por Dominio:', 10, y)
+      y += 8
+      if (respuesta.dominios && Array.isArray(respuesta.dominios)) {
+        respuesta.dominios.forEach((dominio) => {
+          doc.text(`- ${dominio.nombre}: ${dominio.puntaje}`, 15, y)
+          y += 7
+        })
+      }
+
+      y += 10
+    })
+
+    // Guardar PDF
+    const nombreArchivo = `Resultados_Trabajo_${empresa?.nombreEmpresa?.replace(/[^a-zA-Z0-9]/g, '_') || 'Empresa'}_${new Date().toISOString().split('T')[0]}.pdf`
+    doc.save(nombreArchivo)
+  }
+
+  // Función para descargar Excel
+  const handleDescargarExcel = () => {
+    if (!verificarFormulariosCompletos()) {
+      alert('No se puede descargar el Excel. Debe completar todos los formularios primero.')
+      return
+    }
+
+    if (!resultados || !resultados.data) {
+      alert('No hay datos para exportar.')
+      return
+    }
+
+    const { empresa, resultados: respuestas } = resultados.data
+    const wb = XLSX.utils.book_new()
+
+    // Calcular estadísticas
+    const totalEncuestas = respuestas.length
+    const totalPuntaje = respuestas.reduce((sum, respuesta) => sum + (respuesta.puntajeTotal || 0), 0)
+    const promedioPuntaje = totalEncuestas > 0 ? (totalPuntaje / totalEncuestas).toFixed(2) : 0
+    const nivelRiesgoGeneral = determinarNivelRiesgoGeneral(parseFloat(promedioPuntaje))
+    const ultimaFecha = respuestas.reduce((latest, respuesta) => {
+      const fechaActual = new Date(respuesta.updatedAt || respuesta.createdAt)
+      return fechaActual > latest ? fechaActual : latest
+    }, new Date(0))
+
+    // Hoja 1: Resumen General
+    const resumenData = [
+      ['REPORTE DE RESULTADOS - FORMULARIO PSICOSOCIAL TRABAJO'],
+      ['Empresa', empresa?.nombreEmpresa || 'N/A'],
+      ['Total Encuestas', totalEncuestas],
+      ['Total Empleados', empresa?.cantidadEmpleados || 0],
+      ['Puntaje Promedio', promedioPuntaje],
+      ['Nivel de Riesgo', nivelRiesgoGeneral],
+      ['Fecha de Actualización', formatDate(ultimaFecha)],
+      [],
+      ['RESUMEN DE ENCUESTAS']
+    ]
+
+    const wsResumen = XLSX.utils.aoa_to_sheet(resumenData)
+    XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen')
+
+    // Hoja 2: Respuestas por Encuesta
+    const respuestasData = [
+      ['ID Encuesta', 'Fecha', 'Puntaje Total', 'Nivel de Riesgo']
+    ]
+
+    respuestas.forEach((respuesta, index) => {
+      const fecha = formatDate(respuesta.createdAt)
+      respuestasData.push([
+        `Encuesta ${index + 1}`,
+        fecha,
+        respuesta.puntajeTotal || 0,
+        respuesta.nivelRiesgo || 'Nulo o despreciable'
+      ])
+    })
+
+    const wsRespuestas = XLSX.utils.aoa_to_sheet(respuestasData)
+    XLSX.utils.book_append_sheet(wb, wsRespuestas, 'Encuestas')
+
+    // Hoja 3: Puntajes por Categoría
+    const categoriasData = [
+      ['ID Encuesta', 'Fecha', 'Categoría', 'Puntaje', 'Nivel']
+    ]
+
+    respuestas.forEach((respuesta, index) => {
+      const fecha = formatDate(respuesta.createdAt)
+      const categorias = respuesta.categorias || []
+      
+      categorias.forEach((categoria) => {
+        const nivel = obtenerNivelPorCategoriaTrabajo(categoria.nombre, categoria.puntaje)
+        categoriasData.push([
+          `Encuesta ${index + 1}`,
+          fecha,
+          categoria.nombre,
+          categoria.puntaje,
+          nivel
+        ])
+      })
+    })
+
+    const wsCategorias = XLSX.utils.aoa_to_sheet(categoriasData)
+    XLSX.utils.book_append_sheet(wb, wsCategorias, 'Categorías')
+
+    // Hoja 4: Puntajes por Dominio
+    const dominiosData = [
+      ['ID Encuesta', 'Fecha', 'Dominio', 'Puntaje', 'Nivel']
+    ]
+
+    respuestas.forEach((respuesta, index) => {
+      const fecha = formatDate(respuesta.createdAt)
+      const dominios = respuesta.dominios || []
+      
+      dominios.forEach((dominio) => {
+        const nivel = obtenerNivelPorDominioTrabajo(dominio.nombre, dominio.puntaje)
+        dominiosData.push([
+          `Encuesta ${index + 1}`,
+          fecha,
+          dominio.nombre,
+          dominio.puntaje,
+          nivel
+        ])
+      })
+    })
+
+    const wsDominios = XLSX.utils.aoa_to_sheet(dominiosData)
+    XLSX.utils.book_append_sheet(wb, wsDominios, 'Dominios')
+
+    // Hoja 5: Respuestas Detalladas por Pregunta
+    const preguntasData = [
+      ['ID Encuesta', 'Fecha', 'Pregunta', 'Respuesta', 'Valor Numérico']
+    ]
+
+    respuestas.forEach((respuesta, index) => {
+      const fecha = formatDate(respuesta.createdAt)
+      const preguntas = respuesta.preguntas || {}
+      
+      Object.entries(preguntas).forEach(([pregunta, respuestaPregunta]) => {
+        if (pregunta.startsWith('pregunta')) {
+          // Convertir valor a numérico
+          let valorNumerico = 0
+          if (typeof respuestaPregunta === 'boolean') {
+            valorNumerico = respuestaPregunta ? 1 : 0
+          } else if (typeof respuestaPregunta === 'number') {
+            valorNumerico = respuestaPregunta
+          } else if (typeof respuestaPregunta === 'string') {
+            const valoresMap = {
+              'Siempre': 0,
+              'Casi siempre': 1,
+              'Algunas veces': 2,
+              'Casi nunca': 3,
+              'Nunca': 4,
+              'Sí': 1,
+              'No': 0
+            }
+            valorNumerico = valoresMap[respuestaPregunta] !== undefined ? valoresMap[respuestaPregunta] : 0
+          }
+
+          preguntasData.push([
+            `Encuesta ${index + 1}`,
+            fecha,
+            pregunta.replace('pregunta', 'Pregunta '),
+            typeof respuestaPregunta === 'boolean' ? (respuestaPregunta ? 'Sí' : 'No') : respuestaPregunta,
+            valorNumerico
+          ])
+        }
+      })
+    })
+
+    const wsPreguntas = XLSX.utils.aoa_to_sheet(preguntasData)
+    XLSX.utils.book_append_sheet(wb, wsPreguntas, 'Respuestas Detalladas')
+
+    // Generar nombre de archivo
+    const nombreArchivo = `Resultados_Trabajo_${empresa?.nombreEmpresa?.replace(/[^a-zA-Z0-9]/g, '_') || 'Empresa'}_${new Date().toISOString().split('T')[0]}.xlsx`
+
+    // Descargar el archivo
+    XLSX.writeFile(wb, nombreArchivo)
+  }
+
   return (
     <div className="container py-5">
       <div className="row justify-content-center">
@@ -335,7 +589,7 @@ function ResultadosTrabajo() {
 
               {/* Resumen de la empresa */}
               <div className="row mb-4">
-                <div className="col-md-4">
+                <div className="col-md-3">
                   <div className="card card-summary h-100">
                     <div className="card-body text-center py-3">
                       <div className="icon-container bg-primary bg-opacity-10">
@@ -346,7 +600,7 @@ function ResultadosTrabajo() {
                     </div>
                   </div>
                 </div>
-                <div className="col-md-4">
+                <div className="col-md-3">
                   <div className="card card-summary h-100">
                     <div className="card-body text-center py-3">
                       <div className="icon-container bg-info bg-opacity-10">
@@ -357,7 +611,7 @@ function ResultadosTrabajo() {
                     </div>
                   </div>
                 </div>
-                <div className="col-md-4">
+                <div className="col-md-3">
                   <div className="card card-summary h-100">
                     <div className="card-body text-center py-3">
                       <div className="icon-container bg-warning bg-opacity-10">
@@ -372,6 +626,37 @@ function ResultadosTrabajo() {
                     </div>
                   </div>
                 </div>
+                <div className="col-md-3">
+                  <div className="card card-summary h-100">
+                    <div className="card-body text-center py-3">
+                      <div className="icon-container bg-success bg-opacity-10">
+                        <i className="bi bi-calendar text-success fs-4"></i>
+                      </div>
+                      <h3 className="h6 text-muted mt-1 mb-1">Última Actualización</h3>
+                      <p className="small mb-0">{formatDate(ultimaFecha)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botones Descargar PDF y Excel */}
+              <div className="text-end mb-4">
+                <button 
+                  className="btn btn-danger me-2" 
+                  onClick={handleDescargarPDF}
+                  disabled={!verificarFormulariosCompletos()}
+                  title={!verificarFormulariosCompletos() ? 'Debe completar todos los formularios para descargar el PDF' : ''}
+                >
+                  <i className="bi bi-file-pdf me-2"></i>Descargar PDF
+                </button>
+                <button 
+                  className="btn btn-success" 
+                  onClick={handleDescargarExcel}
+                  disabled={!verificarFormulariosCompletos()}
+                  title={!verificarFormulariosCompletos() ? 'Debe completar todos los formularios para descargar el Excel' : ''}
+                >
+                  <i className="bi bi-file-excel me-2"></i>Descargar Excel
+                </button>
               </div>
 
               {/* Necesidad de acción global */}
@@ -431,25 +716,15 @@ function ResultadosTrabajo() {
                                   </div>
                                   <div className="card-body">
                                     {Object.keys(categoriasDict).length > 0 ? (
-                                      <div className="donut-chart-grid">
-                                        {Object.entries(categoriasDict).map(([nombre, valor], idx) => {
-                                          const maximo = obtenerMaximoCategoriaTrabajo(nombre)
-                                          const nivel = obtenerNivelPorCategoriaTrabajo(nombre, valor)
-                                          
-                                          return (
-                                            <DonutChart
-                                              key={`categoria-${idx}-${nombre}`}
-                                              valor={valor}
-                                              maximo={maximo}
-                                              nombre={nombre}
-                                              nivel={nivel}
-                                              tipo="categoria"
-                                            />
-                                          )
-                                        })}
-                                      </div>
+                                      <PuntajesGrid 
+                                        puntajes={categoriasDict} 
+                                        tipo="categoria"
+                                      />
                                     ) : (
-                                      <p className="text-muted small">No hay datos disponibles</p>
+                                      <div className="alert alert-warning">
+                                        <p className="mb-0">No hay datos de categorías disponibles para esta respuesta.</p>
+                                        <small>Puntaje total: {respuesta.puntajeTotal || 0}</small>
+                                      </div>
                                     )}
                                   </div>
                                 </div>
@@ -465,25 +740,15 @@ function ResultadosTrabajo() {
                                   </div>
                                   <div className="card-body">
                                     {Object.keys(dominiosDict).length > 0 ? (
-                                      <div className="donut-chart-grid">
-                                        {Object.entries(dominiosDict).map(([nombre, valor], idx) => {
-                                          const maximo = obtenerMaximoDominioTrabajo(nombre)
-                                          const nivel = obtenerNivelPorDominioTrabajo(nombre, valor)
-                                          
-                                          return (
-                                            <DonutChart
-                                              key={`dominio-${idx}-${nombre}`}
-                                              valor={valor}
-                                              maximo={maximo}
-                                              nombre={nombre}
-                                              nivel={nivel}
-                                              tipo="dominio"
-                                            />
-                                          )
-                                        })}
-                                      </div>
+                                      <PuntajesGrid 
+                                        puntajes={dominiosDict} 
+                                        tipo="dominio"
+                                      />
                                     ) : (
-                                      <p className="text-muted small">No hay datos disponibles</p>
+                                      <div className="alert alert-warning">
+                                        <p className="mb-0">No hay datos de dominios disponibles para esta respuesta.</p>
+                                        <small>Puntaje total: {respuesta.puntajeTotal || 0}</small>
+                                      </div>
                                     )}
                                   </div>
                                 </div>
