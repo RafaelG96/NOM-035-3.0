@@ -7,14 +7,9 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
-### Cambios Pendientes
-- Documentación de arquitectura
-- Mejoras en formularios traumáticos
-- Validaciones mejoradas
-
 ---
 
-## [1.0.0] - 2024-12-XX
+## [1.0.0] - 2025-11-05
 
 ### 🎉 Lanzamiento Inicial
 
@@ -53,10 +48,15 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - Mejoras en el backend de formularios
 - Cambios en formulario de trauma
 - Mejoras en filtrado de datos de empresas
+- Mejoras en formularios traumáticos y validaciones
 
 #### Documentación
 - Documentación de arquitectura completa (ARQUITECTURA.md)
 - Diagramas de arquitectura y flujos (DIAGRAMAS.md)
+- Sistema completo de versionamiento (VERSIONAMIENTO.md)
+- Estrategia de ramas y branching (ESTRATEGIA-RAMAS.md)
+- Documentación de monorepo (MONOREPO.md)
+- Scripts de automatización para releases y hotfixes
 - README del frontend React
 
 ---
