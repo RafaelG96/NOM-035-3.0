@@ -22,9 +22,10 @@ function QuestionForm({ questions, onSubmit, loading = false }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     
-    // Validar que todas las preguntas requeridas estén respondidas
+    // Validar que todas las preguntas requeridas y visibles estén respondidas
     const newErrors = {}
     questions.forEach(q => {
+      // Solo validar si es requerida y está visible (no tiene conditional o está visible)
       if (q.required && !formData[q.id]) {
         newErrors[q.id] = 'Esta pregunta es obligatoria'
       }
@@ -58,7 +59,7 @@ function QuestionForm({ questions, onSubmit, loading = false }) {
             className={`form-select ${errors[question.id] ? 'is-invalid' : ''}`}
             value={formData[question.id] || ''}
             onChange={(e) => handleChange(question.id, e.target.value)}
-            required={question.required}
+            required={question.required && !question.conditional}
           >
             <option value="">Seleccione una opción</option>
             {options.map(opt => (

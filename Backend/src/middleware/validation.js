@@ -61,11 +61,13 @@ const validateRespuestas = [
 ];
 
 // Middleware para validar respuestas de trauma
+// El nombre de empresa es opcional pero recomendado para poder ver los resultados
 const validateTrauma = [
   body('empresa')
+    .optional({ checkFalsy: true })
     .trim()
-    .isLength({ min: 2, max: 100 })
-    .withMessage('El nombre de la empresa debe tener entre 2 y 100 caracteres'),
+    .isLength({ min: 1, max: 200 })
+    .withMessage('El nombre de la empresa debe tener entre 1 y 200 caracteres si se proporciona'),
   
   body('respuestas')
     .isArray({ min: 1 })

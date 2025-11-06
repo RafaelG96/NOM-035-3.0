@@ -8,8 +8,12 @@ function PsicosocialTrabajo() {
   const [loading, setLoading] = useState(false)
   const [empresaId, setEmpresaId] = useState(null)
   const [empresaNombre, setEmpresaNombre] = useState('')
+  const [servicioClientes, setServicioClientes] = useState('')
+  const [esJefe, setEsJefe] = useState('')
+  const [showClientesQuestions, setShowClientesQuestions] = useState(false)
+  const [showJefeQuestions, setShowJefeQuestions] = useState(false)
 
-  // Preguntas del formulario psicosocial trabajo (versión simplificada - se puede expandir)
+  // Preguntas del formulario psicosocial trabajo - 46 preguntas según NOM-035
   const questions = [
     { id: 'pregunta1', number: 1, text: 'El espacio donde trabajo me permite realizar mis actividades de manera segura e higiénica', required: true },
     { id: 'pregunta2', number: 2, text: 'Mi trabajo me exige hacer mucho esfuerzo físico', required: true },
@@ -51,20 +55,14 @@ function PsicosocialTrabajo() {
     { id: 'pregunta38', number: 38, text: 'Mi jefe ayuda a organizar mejor el trabajo', required: true },
     { id: 'pregunta39', number: 39, text: 'Cuando tengo problemas, mis compañeros me ayudan', required: true },
     { id: 'pregunta40', number: 40, text: 'Puedo confiar en mis compañeros de trabajo', required: true },
-    { id: 'pregunta41', number: 41, text: 'Mis compañeros me tratan con respeto', required: true },
-    { id: 'pregunta42', number: 42, text: 'Recibo reconocimientos por mi trabajo', required: true },
-    { id: 'pregunta43', number: 43, text: 'Me pagan lo suficiente por las actividades que realizo', required: true },
-    { id: 'pregunta44', number: 44, text: 'Tengo las mismas oportunidades de ser promovido que otros compañeros', required: true },
-    { id: 'pregunta45', number: 45, text: 'En mi trabajo puedo expresarme libremente sin interrupciones', required: true },
-    { id: 'pregunta46', number: 46, text: 'Recibo críticas constantes a mi persona y/o trabajo', required: true },
-    { id: 'pregunta47', number: 47, text: 'Recibo burlas, calumnias, difamaciones, humillaciones, ridiculizaciones, como parte del trato frecuente en mi trabajo', required: true },
-    { id: 'pregunta48', number: 48, text: 'Se ignora mi presencia o se me excluye de las reuniones de trabajo y/o en la toma de decisiones', required: true },
-    { id: 'pregunta49', number: 49, text: 'Se manipulan las situaciones de trabajo para hacerme parecer un mal trabajador', required: true },
-    { id: 'pregunta50', number: 50, text: 'Se sospecha frecuentemente del cumplimiento de mi trabajo sin motivo', required: true },
-    { id: 'pregunta51', number: 51, text: 'Se vigila constantemente mi trabajo', required: true },
-    { id: 'pregunta52', number: 52, text: 'Se presiona para que no ejerza mis derechos laborales establecidos por la ley', required: true },
-    { id: 'pregunta53', number: 53, text: 'Se asignan actividades sin el material necesario para realizarlas', required: true },
-    { id: 'pregunta54', number: 54, text: 'He presenciado actos de violencia en mi centro de trabajo', required: true }
+    // Preguntas condicionales - Solo si atiende clientes (41-43)
+    { id: 'pregunta41', number: 41, text: 'Recibo burlas, calumnias, difamaciones, humillaciones, ridiculizaciones, como parte del trato frecuente en mi trabajo', required: false, conditional: 'servicioClientes' },
+    { id: 'pregunta42', number: 42, text: 'Se ignora mi presencia o se me excluye de las reuniones de trabajo y/o en la toma de decisiones', required: false, conditional: 'servicioClientes' },
+    { id: 'pregunta43', number: 43, text: 'Se manipulan las situaciones de trabajo para hacerme parecer un mal trabajador', required: false, conditional: 'servicioClientes' },
+    // Preguntas condicionales - Solo si es jefe (44-46)
+    { id: 'pregunta44', number: 44, text: 'Recibo reconocimientos por mi trabajo', required: false, conditional: 'esJefe' },
+    { id: 'pregunta45', number: 45, text: 'Me pagan lo suficiente por las actividades que realizo', required: false, conditional: 'esJefe' },
+    { id: 'pregunta46', number: 46, text: 'Tengo las mismas oportunidades de ser promovido que otros compañeros', required: false, conditional: 'esJefe' }
   ]
 
   useEffect(() => {
@@ -81,18 +79,58 @@ function PsicosocialTrabajo() {
     setEmpresaNombre(storedEmpresaNombre)
   }, [navigate])
 
+  useEffect(() => {
+    setShowClientesQuestions(servicioClientes === 'Sí')
+    setShowJefeQuestions(esJefe === 'Sí')
+  }, [servicioClientes, esJefe])
+
   const handleSubmit = async (formData) => {
     if (!empresaId) {
       alert('Por favor inicie sesión primero')
       return
     }
 
+    if (!servicioClientes || !esJefe) {
+      alert('Por favor responda las preguntas sobre servicio a clientes y si es jefe')
+      return
+    }
+
     setLoading(true)
 
     try {
+      // Construir objeto de preguntas igual al frontend anterior
+      const preguntas = {}
+      
+      // Agregar preguntas 1-40 (obligatorias)
+      for (let i = 1; i <= 40; i++) {
+        if (formData[`pregunta${i}`]) {
+          preguntas[`pregunta${i}`] = formData[`pregunta${i}`]
+        }
+      }
+
+      // Agregar preguntas condicionales de clientes (41-43) solo si corresponde
+      if (servicioClientes === 'Sí') {
+        for (let i = 41; i <= 43; i++) {
+          if (formData[`pregunta${i}`]) {
+            preguntas[`pregunta${i}`] = formData[`pregunta${i}`]
+          }
+        }
+      }
+
+      // Agregar preguntas condicionales de jefe (44-46) solo si corresponde
+      if (esJefe === 'Sí') {
+        for (let i = 44; i <= 46; i++) {
+          if (formData[`pregunta${i}`]) {
+            preguntas[`pregunta${i}`] = formData[`pregunta${i}`]
+          }
+        }
+      }
+
       const data = {
         empresaId,
-        preguntas: formData,
+        servicioClientes: servicioClientes === 'Sí',
+        esJefe: esJefe === 'Sí',
+        preguntas: preguntas,
         timestamp: new Date().toISOString()
       }
 
@@ -117,8 +155,55 @@ function PsicosocialTrabajo() {
 
       <div className="card shadow-sm">
         <div className="card-body">
+          {/* Preguntas sobre servicio a clientes y jefe */}
+          <div className="row mb-4">
+            <div className="col-md-6 mb-3">
+              <label className="form-label fw-bold">
+                ¿Debe brindar servicio a clientes o usuarios?
+                <span className="text-danger"> *</span>
+              </label>
+              <select
+                className="form-select"
+                value={servicioClientes}
+                onChange={(e) => setServicioClientes(e.target.value)}
+                required
+              >
+                <option value="">Seleccione una opción</option>
+                <option value="Sí">Sí</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div className="col-md-6 mb-3">
+              <label className="form-label fw-bold">
+                ¿Es jefe de otros trabajadores?
+                <span className="text-danger"> *</span>
+              </label>
+              <select
+                className="form-select"
+                value={esJefe}
+                onChange={(e) => setEsJefe(e.target.value)}
+                required
+              >
+                <option value="">Seleccione una opción</option>
+                <option value="Sí">Sí</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+          </div>
+
+          <hr className="my-4" />
+
           <QuestionForm 
-            questions={questions} 
+            questions={questions.filter(q => {
+              // Filtrar preguntas condicionales según las respuestas
+              if (q.conditional === 'servicioClientes') {
+                return showClientesQuestions
+              }
+              if (q.conditional === 'esJefe') {
+                return showJefeQuestions
+              }
+              return true
+            })}
             onSubmit={handleSubmit}
             loading={loading}
           />

@@ -10,8 +10,11 @@ function PsicosocialEntorno() {
   const [loginData, setLoginData] = useState({ nombreEmpresa: '', clave: '' })
   const [empresaId, setEmpresaId] = useState(null)
   const [empresaNombre, setEmpresaNombre] = useState('')
+  const [servicioClientes, setServicioClientes] = useState('')
+  const [esJefe, setEsJefe] = useState('')
+  const [showClientesQuestions, setShowClientesQuestions] = useState(false)
 
-  // Preguntas del formulario psicosocial entorno (versión simplificada - se puede expandir)
+  // Preguntas del formulario psicosocial entorno - 72 preguntas según NOM-035
   const questions = [
     // Sección 1: Condiciones ambientales
     { id: 'pregunta1', number: 1, text: 'El espacio donde trabajo me permite realizar mis actividades de manera segura e higiénica', required: true },
@@ -90,26 +93,26 @@ function PsicosocialEntorno() {
     { id: 'pregunta52', number: 52, text: 'Se presiona para que no ejerza mis derechos laborales establecidos por la ley', required: true },
     { id: 'pregunta53', number: 53, text: 'Se asignan actividades sin el material necesario para realizarlas', required: true },
     { id: 'pregunta54', number: 54, text: 'He presenciado actos de violencia en mi centro de trabajo', required: true },
-    { id: 'pregunta55', number: 55, text: 'Atiendo clientes o usuarios muy enojados', required: true },
-    { id: 'pregunta56', number: 56, text: 'Mi trabajo me exige atender personas muy necesitadas de ayuda o enfermas', required: true },
-    { id: 'pregunta57', number: 57, text: 'Por la atención a clientes o usuarios, necesito mantener un estado de ánimo positivo a pesar de los acontecimientos personales', required: true },
     
-    // Sección 13: Supervisión
-    { id: 'pregunta58', number: 58, text: 'Mi trabajo me exige demostrar sentimientos distintos a los reales', required: true },
-    { id: 'pregunta59', number: 59, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me asustan', required: true },
-    { id: 'pregunta60', number: 60, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me ponen en riesgo', required: true },
-    { id: 'pregunta61', number: 61, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen enojar', required: true },
-    { id: 'pregunta62', number: 62, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir mal', required: true },
-    { id: 'pregunta63', number: 63, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir triste', required: true },
-    { id: 'pregunta64', number: 64, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir impotente', required: true },
-    { id: 'pregunta65', number: 65, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir frustrado', required: true },
-    { id: 'pregunta66', number: 66, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir asustado', required: true },
-    { id: 'pregunta67', number: 67, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir tenso', required: true },
-    { id: 'pregunta68', number: 68, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir nervioso', required: true },
-    { id: 'pregunta69', number: 69, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir ansioso', required: true },
-    { id: 'pregunta70', number: 70, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir preocupado', required: true },
-    { id: 'pregunta71', number: 71, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir agobiado', required: true },
-    { id: 'pregunta72', number: 72, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir abrumado', required: true }
+    // Sección 13: Atención a clientes y usuarios (55-72) - Condicionales
+    { id: 'pregunta55', number: 55, text: 'Atiendo clientes o usuarios muy enojados', required: false, conditional: 'servicioClientes' },
+    { id: 'pregunta56', number: 56, text: 'Mi trabajo me exige atender personas muy necesitadas de ayuda o enfermas', required: false, conditional: 'servicioClientes' },
+    { id: 'pregunta57', number: 57, text: 'Por la atención a clientes o usuarios, necesito mantener un estado de ánimo positivo a pesar de los acontecimientos personales', required: false, conditional: 'servicioClientes' },
+    { id: 'pregunta58', number: 58, text: 'Mi trabajo me exige demostrar sentimientos distintos a los reales', required: false, conditional: 'servicioClientes' },
+    { id: 'pregunta59', number: 59, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me asustan', required: false, conditional: 'servicioClientes' },
+    { id: 'pregunta60', number: 60, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me ponen en riesgo', required: false, conditional: 'servicioClientes' },
+    { id: 'pregunta61', number: 61, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen enojar', required: false, conditional: 'servicioClientes' },
+    { id: 'pregunta62', number: 62, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir mal', required: false, conditional: 'servicioClientes' },
+    { id: 'pregunta63', number: 63, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir triste', required: false, conditional: 'servicioClientes' },
+    { id: 'pregunta64', number: 64, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir impotente', required: false, conditional: 'servicioClientes' },
+    { id: 'pregunta65', number: 65, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir frustrado', required: false, conditional: 'servicioClientes' },
+    { id: 'pregunta66', number: 66, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir asustado', required: false, conditional: 'servicioClientes' },
+    { id: 'pregunta67', number: 67, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir tenso', required: false, conditional: 'servicioClientes' },
+    { id: 'pregunta68', number: 68, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir nervioso', required: false, conditional: 'servicioClientes' },
+    { id: 'pregunta69', number: 69, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir ansioso', required: false, conditional: 'servicioClientes' },
+    { id: 'pregunta70', number: 70, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir preocupado', required: false, conditional: 'servicioClientes' },
+    { id: 'pregunta71', number: 71, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir agobiado', required: false, conditional: 'servicioClientes' },
+    { id: 'pregunta72', number: 72, text: 'Mi trabajo me exige atender situaciones de usuarios o clientes que me hacen sentir abrumado', required: false, conditional: 'servicioClientes' }
   ]
 
   useEffect(() => {
@@ -125,6 +128,10 @@ function PsicosocialEntorno() {
       setShowLogin(true)
     }
   }, [])
+
+  useEffect(() => {
+    setShowClientesQuestions(servicioClientes === 'Sí')
+  }, [servicioClientes])
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -152,12 +159,38 @@ function PsicosocialEntorno() {
       return
     }
 
+    if (!servicioClientes || !esJefe) {
+      alert('Por favor responda las preguntas sobre servicio a clientes y si es jefe')
+      return
+    }
+
     setLoading(true)
 
     try {
+      // Construir objeto de preguntas igual al frontend anterior
+      const preguntas = {}
+      
+      // Agregar preguntas 1-54 (obligatorias)
+      for (let i = 1; i <= 54; i++) {
+        if (formData[`pregunta${i}`]) {
+          preguntas[`pregunta${i}`] = formData[`pregunta${i}`]
+        }
+      }
+
+      // Agregar preguntas condicionales de clientes (55-72) solo si corresponde
+      if (servicioClientes === 'Sí') {
+        for (let i = 55; i <= 72; i++) {
+          if (formData[`pregunta${i}`]) {
+            preguntas[`pregunta${i}`] = formData[`pregunta${i}`]
+          }
+        }
+      }
+
       const data = {
         empresaId,
-        preguntas: formData,
+        servicioClientes: servicioClientes === 'Sí',
+        esJefe: esJefe === 'Sí',
+        preguntas: preguntas,
         timestamp: new Date().toISOString()
       }
 
@@ -236,8 +269,52 @@ function PsicosocialEntorno() {
 
       <div className="card shadow-sm">
         <div className="card-body">
+          {/* Preguntas sobre servicio a clientes y jefe */}
+          <div className="row mb-4">
+            <div className="col-md-6 mb-3">
+              <label className="form-label fw-bold">
+                ¿Debe brindar servicio a clientes o usuarios?
+                <span className="text-danger"> *</span>
+              </label>
+              <select
+                className="form-select"
+                value={servicioClientes}
+                onChange={(e) => setServicioClientes(e.target.value)}
+                required
+              >
+                <option value="">Seleccione una opción</option>
+                <option value="Sí">Sí</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div className="col-md-6 mb-3">
+              <label className="form-label fw-bold">
+                ¿Es jefe de otros trabajadores?
+                <span className="text-danger"> *</span>
+              </label>
+              <select
+                className="form-select"
+                value={esJefe}
+                onChange={(e) => setEsJefe(e.target.value)}
+                required
+              >
+                <option value="">Seleccione una opción</option>
+                <option value="Sí">Sí</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+          </div>
+
+          <hr className="my-4" />
+
           <QuestionForm 
-            questions={questions} 
+            questions={questions.filter(q => {
+              // Filtrar preguntas condicionales según las respuestas
+              if (q.conditional === 'servicioClientes') {
+                return showClientesQuestions
+              }
+              return true
+            })}
             onSubmit={handleSubmit}
             loading={loading}
           />

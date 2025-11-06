@@ -17,7 +17,8 @@ const traumaRespuestaSchema = new mongoose.Schema({
 const traumaCuestionarioSchema = new mongoose.Schema({
   empresa: {
     type: String,
-    required: true,
+    required: false, // Opcional para permitir formularios sin nombre de empresa
+    default: 'Sin especificar',
     trim: true
   },
   respuestas: [traumaRespuestaSchema],

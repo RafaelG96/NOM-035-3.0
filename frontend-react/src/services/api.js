@@ -88,7 +88,14 @@ export const psicosocialAPI = {
 // API de Eventos Traumáticos
 export const traumaAPI = {
   create: (data) => api.post('/trauma', data),
-  getResultados: (empresaNombre) => api.get(`/trauma`, { params: { empresa: empresaNombre } }),
+  getResultados: (empresaNombre) => {
+    if (empresaNombre) {
+      return api.get(`/trauma`, { params: { empresa: empresaNombre } })
+    } else {
+      return api.get(`/trauma`)
+    }
+  },
+  getEmpresas: () => api.get('/trauma/empresas'),
 };
 
 export default api;

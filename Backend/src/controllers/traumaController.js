@@ -2,20 +2,42 @@ const TraumaCuestionario = require('../models/traumaModel');
 
 exports.guardarCuestionario = async (req, res) => {
   try {
+    console.log('📥 Datos recibidos en el backend:', {
+      body: req.body,
+      empresa: req.body.empresa,
+      tipoEmpresa: typeof req.body.empresa,
+      respuestasCount: req.body.respuestas?.length
+    });
+
     const { empresa, respuestas } = req.body;
     
-    // Validaciones
-    if (!empresa || typeof empresa !== 'string' || empresa.trim() === '') {
-      return res.status(400).json({
-        success: false,
-        error: 'El nombre de la empresa es requerido'
-      });
+    // Validaciones mejoradas - el nombre de empresa es opcional pero recomendado
+    let empresaTrimmed = '';
+    
+    if (empresa) {
+      empresaTrimmed = typeof empresa === 'string' ? empresa.trim() : String(empresa).trim();
+      
+      // Si se proporciona un nombre, debe tener al menos 1 carácter
+      if (empresaTrimmed.length === 0) {
+        console.warn('⚠️ Advertencia: empresa proporcionado pero está vacío, se usará "Sin especificar"');
+        empresaTrimmed = 'Sin especificar';
+      } else if (empresaTrimmed.length > 200) {
+        // Truncar si es muy largo
+        empresaTrimmed = empresaTrimmed.substring(0, 200);
+        console.warn('⚠️ Advertencia: nombre de empresa truncado a 200 caracteres');
+      }
+    } else {
+      // Si no se proporciona nombre, usar un valor por defecto
+      console.warn('⚠️ Advertencia: empresa no proporcionado, se usará "Sin especificar"');
+      empresaTrimmed = 'Sin especificar';
     }
 
     if (!Array.isArray(respuestas) || respuestas.length === 0) {
+      console.error('❌ Error: respuestas no válidas');
       return res.status(400).json({
         success: false,
-        error: 'Las respuestas son requeridas'
+        error: 'Las respuestas son requeridas',
+        received: { respuestas: req.body.respuestas, type: typeof req.body.respuestas }
       });
     }
 
@@ -53,8 +75,9 @@ exports.guardarCuestionario = async (req, res) => {
       }
     }
 
+    // Usar el nombre de empresa ya validado y recortado
     const cuestionario = new TraumaCuestionario({
-      empresa: empresa.trim(),
+      empresa: empresaTrimmed,
       respuestas,
       requiereEvaluacion,
       razonesEvaluacion,
@@ -62,6 +85,13 @@ exports.guardarCuestionario = async (req, res) => {
     });
 
     await cuestionario.save();
+
+    console.log('✅ Cuestionario guardado exitosamente:', {
+      id: cuestionario._id,
+      empresa: cuestionario.empresa,
+      identificadorAnonimo: cuestionario.identificadorAnonimo,
+      requiereEvaluacion: cuestionario.requiereEvaluacion
+    });
 
     res.status(201).json({
       success: true,
