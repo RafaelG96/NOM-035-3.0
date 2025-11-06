@@ -16,6 +16,11 @@ const empresaSchema = new mongoose.Schema({
         required: [true, 'La clave es requerida'],
         trim: true
     },
+    codigoAccesoResultados: {
+        type: String,
+        required: [true, 'El código de acceso a resultados es requerido'],
+        trim: true
+    },
     muestraRepresentativa: {
         type: Number,
         required: function() {

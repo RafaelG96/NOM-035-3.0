@@ -29,8 +29,16 @@ const securityConfig = {
       'http://localhost:5174',       // Frontend React (Vite dev server - puerto alternativo)
       'http://127.0.0.1:5174'
     ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type', 
+      'Authorization', 
+      'x-empresa-nombre',
+      'x-codigo-acceso',
+      'X-Empresa-Nombre',
+      'X-Codigo-Acceso'
+    ],
+    exposedHeaders: ['x-empresa-nombre', 'x-codigo-acceso'],
     credentials: true,
     maxAge: 86400 // 24 horas
   },

@@ -7,7 +7,8 @@ function RegistroEmpresa() {
   const [formData, setFormData] = useState({
     nombreEmpresa: '',
     cantidadEmpleados: '',
-    clave: ''
+    clave: '',
+    codigoAccesoResultados: ''
   })
   const [loading, setLoading] = useState(false)
   const [showModal, setShowModal] = useState(false)
@@ -45,7 +46,7 @@ function RegistroEmpresa() {
 
     const cantidadEmpleados = parseInt(formData.cantidadEmpleados)
     
-    if (!formData.nombreEmpresa || !formData.clave || cantidadEmpleados <= 0) {
+    if (!formData.nombreEmpresa || !formData.clave || !formData.codigoAccesoResultados || cantidadEmpleados <= 0) {
       alert('Por favor complete todos los campos correctamente')
       setLoading(false)
       return
@@ -67,6 +68,7 @@ function RegistroEmpresa() {
       nombreEmpresa: formData.nombreEmpresa,
       cantidadEmpleados: cantidadEmpleados,
       clave: formData.clave,
+      codigoAccesoResultados: formData.codigoAccesoResultados,
       tipoFormulario: formularioInfo.requiereMuestra ? 'completo' : 'basico'
     }
 
@@ -99,6 +101,7 @@ function RegistroEmpresa() {
           nombreEmpresa: formData.nombreEmpresa,
           cantidadEmpleados: cantidadEmpleados,
           clave: formData.clave,
+          codigoAccesoResultados: formData.codigoAccesoResultados,
           formularioInfo,
           muestraRepresentativa
         });
@@ -160,7 +163,7 @@ function RegistroEmpresa() {
                 
                 <div className="mb-4">
                   <label htmlFor="clave" className="form-label">
-                    <i className="bi bi-key me-2"></i>Clave de acceso
+                    <i className="bi bi-key me-2"></i>Clave de acceso (Para empleados)
                   </label>
                   <input 
                     type="text" 
@@ -170,7 +173,22 @@ function RegistroEmpresa() {
                     value={formData.clave}
                     onChange={(e) => setFormData({...formData, clave: e.target.value})}
                   />
-                  <small className="form-text text-muted">Clave proporcionada por el administrador</small>
+                  <small className="form-text text-muted">Clave para que los empleados accedan al formulario</small>
+                </div>
+
+                <div className="mb-4">
+                  <label htmlFor="codigo-acceso-resultados" className="form-label">
+                    <i className="bi bi-shield-lock me-2"></i>Código de acceso a resultados
+                  </label>
+                  <input 
+                    type="text" 
+                    className="form-control form-control-lg" 
+                    id="codigo-acceso-resultados" 
+                    required
+                    value={formData.codigoAccesoResultados}
+                    onChange={(e) => setFormData({...formData, codigoAccesoResultados: e.target.value})}
+                  />
+                  <small className="form-text text-muted">Código seguro para acceder a los resultados. Guárdelo en un lugar seguro.</small>
                 </div>
                 
                 <div className="d-grid mt-4">
@@ -275,10 +293,20 @@ function RegistroEmpresa() {
                           </div>
                         )}
                         <div className="col-md-6 mb-2">
-                          <small className="text-muted">Clave Asignada</small>
+                          <small className="text-muted">Clave Asignada (Para empleados)</small>
                           <div className="fw-bold">
                             <code className="bg-light p-1 rounded">{modalData.clave}</code>
                           </div>
+                        </div>
+                        <div className="col-md-6 mb-2">
+                          <small className="text-muted">Código de Acceso a Resultados</small>
+                          <div className="fw-bold">
+                            <code className="bg-light p-1 rounded">{modalData.codigoAccesoResultados}</code>
+                          </div>
+                          <small className="text-warning">
+                            <i className="bi bi-exclamation-triangle me-1"></i>
+                            Guarde este código para acceder a los resultados
+                          </small>
                         </div>
                       </div>
                     </div>

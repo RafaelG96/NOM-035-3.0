@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { psicosocialAPI, empresaAPI } from '../services/api'
 import PuntajesGrid from '../components/PuntajesGrid'
+import LoginResultados from '../components/LoginResultados'
 import jsPDF from 'jspdf'
 import * as XLSX from 'xlsx'
 
@@ -13,12 +14,21 @@ function ResultadosEntorno() {
   const [empresas, setEmpresas] = useState([])
   const [empresaSeleccionada, setEmpresaSeleccionada] = useState('')
   const [empresaId] = useState(localStorage.getItem('empresaId'))
+  const [credenciales, setCredenciales] = useState(() => {
+    // Intentar cargar credenciales del localStorage
+    const saved = localStorage.getItem('resultadosAuth')
+    return saved ? JSON.parse(saved) : null
+  })
+  const [showLogin, setShowLogin] = useState(false)
 
   useEffect(() => {
-    loadEmpresas()
-    // NO usar localStorage automáticamente - esperar a que se carguen las empresas
-    // y verificar que la empresa del localStorage tenga respuestas
-  }, [])
+    // Verificar si hay credenciales guardadas
+    if (!credenciales) {
+      setShowLogin(true)
+    } else {
+      loadEmpresas()
+    }
+  }, [credenciales])
 
   useEffect(() => {
     if (empresaSeleccionada) {
@@ -29,6 +39,8 @@ function ResultadosEntorno() {
   }, [empresaSeleccionada])
 
   const loadEmpresas = async () => {
+    if (!credenciales) return
+    
     try {
       setLoadingEmpresas(true)
       const response = await empresaAPI.getConFormularioCompleto()
@@ -39,36 +51,32 @@ function ResultadosEntorno() {
         empresasData = response.data
       }
       
-      setEmpresas(empresasData)
+      // Filtrar solo la empresa que coincide con las credenciales autenticadas
+      const empresaAutenticada = empresasData.find(emp => 
+        emp.nombreEmpresa === credenciales.nombreEmpresa || 
+        String(emp._id) === String(credenciales.empresaId)
+      )
       
-      // Log para debug: mostrar IDs de empresas disponibles
-      console.log('Empresas cargadas para selector:', empresasData.map(emp => ({
-        _id: emp._id,
-        nombre: emp.nombreEmpresa,
-        empleados: emp.cantidadEmpleados
-      })))
-      
-      // Si hay empresas cargadas, seleccionar la primera automáticamente
-      // (ya que solo se cargan empresas que tienen respuestas guardadas)
-      if (empresasData.length > 0) {
-        const primeraEmpresa = empresasData[0]
-        console.log('Seleccionando automáticamente la primera empresa con respuestas:', {
-          _id: primeraEmpresa._id,
-          nombre: primeraEmpresa.nombreEmpresa
+      if (empresaAutenticada) {
+        setEmpresas([empresaAutenticada])
+        setEmpresaSeleccionada(empresaAutenticada._id)
+        console.log('Empresa autenticada encontrada:', {
+          _id: empresaAutenticada._id,
+          nombre: empresaAutenticada.nombreEmpresa
         })
-        setEmpresaSeleccionada(primeraEmpresa._id)
-        // NO usar localStorage aquí, solo usar las empresas que realmente tienen respuestas
       } else {
-        // Si no hay empresas con respuestas, limpiar el localStorage si existe
-        if (empresaId) {
-          console.log('No hay empresas con respuestas. Limpiando localStorage con ID:', empresaId)
-          localStorage.removeItem('empresaId')
-        }
+        // Si no se encuentra la empresa, puede ser que no tenga respuestas aún
+        setEmpresas([])
+        console.warn('No se encontró la empresa autenticada en la lista de empresas con respuestas')
       }
     } catch (error) {
       console.error('Error al cargar empresas:', error)
-      // Si no hay empresas, mostrar mensaje pero no error fatal
-      if (error.response?.status !== 404) {
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        // Si hay error de autenticación, cerrar sesión
+        setCredenciales(null)
+        localStorage.removeItem('resultadosAuth')
+        setShowLogin(true)
+      } else if (error.response?.status !== 404) {
         alert('Error al cargar las empresas: ' + (error.message || 'Error desconocido'))
       }
     } finally {
@@ -76,14 +84,72 @@ function ResultadosEntorno() {
     }
   }
 
+  const handleLogin = async (formData) => {
+    try {
+      console.log('Intentando autenticar con:', {
+        nombreEmpresa: formData.nombreEmpresa,
+        tieneCodigo: !!formData.codigoAccesoResultados
+      });
+      
+      // Verificar credenciales con el backend
+      const response = await empresaAPI.verifyAccesoResultados(formData)
+      
+      if (response.data && response.data.success) {
+        // Guardar credenciales en estado y localStorage
+        const credencialesData = {
+          nombreEmpresa: formData.nombreEmpresa,
+          codigoAccesoResultados: formData.codigoAccesoResultados,
+          empresaId: response.data.empresaId
+        }
+        console.log('Autenticación exitosa. Guardando credenciales:', {
+          nombreEmpresa: credencialesData.nombreEmpresa,
+          empresaId: credencialesData.empresaId
+        });
+        
+        setCredenciales(credencialesData)
+        localStorage.setItem('resultadosAuth', JSON.stringify(credencialesData))
+        setShowLogin(false)
+        // Cargar empresas después de autenticar
+        loadEmpresas()
+      } else {
+        throw new Error('Credenciales inválidas')
+      }
+    } catch (error) {
+      console.error('Error en handleLogin:', error);
+      throw new Error(error.response?.data?.message || error.message || 'Error al verificar credenciales')
+    }
+  }
+
+  const handleLogout = () => {
+    setCredenciales(null)
+    localStorage.removeItem('resultadosAuth')
+    setResultados(null)
+    setEmpresaSeleccionada('')
+    setShowLogin(true)
+  }
+
   const loadResultados = async (id) => {
-    if (!id) return
+    if (!id) {
+      console.warn('Advertencia: No se proporcionó ID de empresa para cargar resultados');
+      return;
+    }
+    
+    if (!credenciales) {
+      console.error('Error: No hay credenciales disponibles. Redirigiendo al login.');
+      setShowLogin(true);
+      return;
+    }
+    
+    console.log('Cargando resultados para empresa:', {
+      empresaId: id,
+      nombreEmpresa: credenciales.nombreEmpresa,
+      tieneCodigo: !!credenciales.codigoAccesoResultados
+    });
     
     try {
       setLoading(true)
-      const response = await psicosocialAPI.getResultadosEntorno(id)
-      console.log('Respuesta completa del backend:', response)
-      console.log('Datos en response.data:', response.data)
+      const response = await psicosocialAPI.getResultadosEntorno(id, credenciales)
+      console.log('Resultados cargados exitosamente:', response.data)
       
       // Verificar estructura de respuesta
       if (response.data && response.data.data) {
@@ -97,11 +163,25 @@ function ResultadosEntorno() {
         setResultados(response.data)
       }
     } catch (error) {
-      console.error('Error al cargar resultados:', error)
-      console.error('Error response:', error.response)
+      console.error('Error al cargar resultados:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText
+      })
       setResultados(null)
-      if (error.response?.status !== 404) {
-        alert('Error al cargar los resultados: ' + (error.message || 'Error desconocido'))
+      
+      // Si el error es de autenticación, mostrar login nuevamente
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        console.log('Error de autenticación, cerrando sesión');
+        setCredenciales(null)
+        localStorage.removeItem('resultadosAuth')
+        setShowLogin(true)
+        alert('Sesión expirada o credenciales inválidas. Por favor, ingrese nuevamente.')
+      } else if (error.response?.status !== 404) {
+        const errorMessage = error.response?.data?.message || error.message || 'Error desconocido'
+        console.error('Error al cargar resultados:', errorMessage)
+        alert('Error al cargar los resultados: ' + errorMessage)
       }
     } finally {
       setLoading(false)
@@ -385,15 +465,51 @@ function ResultadosEntorno() {
     XLSX.writeFile(wb, nombreArchivo)
   }
 
+  // Mostrar login si no hay credenciales
+  if (showLogin) {
+    return (
+      <>
+        <div className="container py-5" style={{ opacity: 0.3, pointerEvents: 'none' }}>
+          <div className="row justify-content-center">
+            <div className="col-lg-10">
+              <div className="card shadow-sm">
+                <div className="card-header bg-white">
+                  <h1 className="h4 mb-0 text-primary">
+                    <i className="bi bi-chart-pie me-2"></i>Resultados de Encuestas - Entorno
+                  </h1>
+                </div>
+                <div className="card-body">
+                  <p className="text-muted">Por favor, ingrese sus credenciales para acceder a los resultados.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <LoginResultados 
+          onLogin={handleLogin}
+          onCancel={() => navigate('/')}
+          tipoFormulario="entorno"
+        />
+      </>
+    )
+  }
+
   return (
     <div className="container py-5">
       <div className="row justify-content-center">
         <div className="col-lg-10">
           <div className="card shadow-sm">
-            <div className="card-header bg-white">
+            <div className="card-header bg-white d-flex justify-content-between align-items-center">
               <h1 className="h4 mb-0 text-primary">
                 <i className="bi bi-chart-pie me-2"></i>Resultados de Encuestas - Entorno
               </h1>
+              <button 
+                className="btn btn-outline-danger btn-sm"
+                onClick={handleLogout}
+                title="Cerrar sesión"
+              >
+                <i className="bi bi-box-arrow-right me-2"></i>Cerrar Sesión
+              </button>
             </div>
             <div className="card-body">
               {/* Selector de empresa */}
@@ -407,19 +523,28 @@ function ResultadosEntorno() {
                     <p className="mt-2 text-muted small">Cargando empresas disponibles...</p>
                   </div>
                 ) : (
-                  <select
-                    id="empresaSelect"
-                    className="form-select form-select-lg"
-                    value={empresaSeleccionada}
-                    onChange={handleEmpresaChange}
-                  >
-                    <option value="" disabled>-- Seleccione una empresa --</option>
-                    {empresas.map((empresa) => (
-                      <option key={empresa._id} value={empresa._id}>
-                        {empresa.nombreEmpresa} ({empresa.cantidadEmpleados} empleados)
-                      </option>
-                    ))}
-                  </select>
+                  <>
+                    <select
+                      id="empresaSelect"
+                      className="form-select form-select-lg"
+                      value={empresaSeleccionada}
+                      onChange={handleEmpresaChange}
+                      disabled={empresas.length === 1}
+                    >
+                      <option value="" disabled>-- Seleccione una empresa --</option>
+                      {empresas.map((empresa) => (
+                        <option key={empresa._id} value={empresa._id}>
+                          {empresa.nombreEmpresa} ({empresa.cantidadEmpleados} empleados)
+                        </option>
+                      ))}
+                    </select>
+                    {empresas.length === 1 && credenciales && (
+                      <small className="form-text text-muted">
+                        <i className="bi bi-shield-check me-1 text-success"></i>
+                        Mostrando resultados para: <strong>{credenciales.nombreEmpresa}</strong>
+                      </small>
+                    )}
+                  </>
                 )}
                 {!loadingEmpresas && empresas.length === 0 && (
                   <div className="alert alert-info mt-3">

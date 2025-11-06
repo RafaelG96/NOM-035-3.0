@@ -43,13 +43,23 @@ La norma busca establecer los elementos para:
 ### Funcionalidades Principales
 
 - **Registro de Empresas**: Sistema de registro y autenticación para empresas
-- **Sistema de Autenticación**: Verificación mediante claves de acceso para empleados
+  - Registro con nombre, cantidad de empleados, clave de acceso para empleados
+  - **Código de acceso a resultados**: Código adicional seguro para proteger el acceso a los resultados
+- **Sistema de Autenticación Dual**:
+  - **Clave de acceso para empleados**: Para que los empleados accedan y completen los cuestionarios
+  - **Código de acceso a resultados**: Para proteger el acceso a los resultados y reportes de la empresa
+- **Autenticación de Resultados**: 
+  - Sistema de login específico para acceder a los resultados
+  - Protección de datos sensibles de la empresa mediante nombre y código de acceso
+  - Solo usuarios autorizados pueden visualizar los resultados
 - **Cuestionarios Digitales**:
   - **Acontecimientos Traumáticos Severos**: Evaluación de eventos traumáticos
-  - **Factores de Riesgo Psicosocial - Entorno**: Para empresas con 51+ empleados
-  - **Factores de Riesgo Psicosocial - Trabajo**: Para empresas con 1-50 empleados
+  - **Factores de Riesgo Psicosocial - Entorno**: Para empresas con 51+ empleados (72 preguntas)
+  - **Factores de Riesgo Psicosocial - Trabajo**: Para empresas con 1-50 empleados (46 preguntas)
 - **Cálculo Automático de Resultados**: Clasificación de riesgos en **bajo**, **medio** y **alto**
 - **Visualización de Resultados**: Reportes con gráficos y recomendaciones personalizadas
+- **Exportación de Resultados**: Descarga de reportes en formato PDF y Excel
+- **Bloqueo de Descarga**: Los reportes solo se pueden descargar cuando todos los formularios están completos
 - **Almacenamiento en Base de Datos**: Los resultados se guardan en MongoDB para su posterior análisis
 
 ### Frontends Disponibles
@@ -85,6 +95,8 @@ El proyecto incluye dos interfaces frontend:
 - **Axios** - Cliente HTTP para peticiones a la API
 - **Chart.js** - Librería de gráficos
 - **react-chartjs-2** - Wrapper de React para Chart.js
+- **jsPDF** - Generación de documentos PDF
+- **xlsx** - Exportación de datos a formato Excel
 
 ### Frontend Tradicional
 
@@ -112,7 +124,8 @@ NOM-035-5.3s/
 │   │   │   └── traumaController.js
 │   │   ├── middleware/        # Middlewares personalizados
 │   │   │   ├── logging.js     # Logging y detección de seguridad
-│   │   │   └── validation.js   # Validación de datos
+│   │   │   ├── validation.js   # Validación de datos
+│   │   │   └── resultadosAuth.js  # Autenticación para acceso a resultados
 │   │   ├── models/            # Modelos de MongoDB
 │   │   │   ├── empresa.js
 │   │   │   ├── respuesta.js
@@ -140,7 +153,8 @@ NOM-035-5.3s/
 │   │   │   ├── QuestionForm.jsx
 │   │   │   ├── TraumaticQuestionForm.jsx
 │   │   │   ├── DonutChart.jsx
-│   │   │   └── PuntajesGrid.jsx
+│   │   │   ├── PuntajesGrid.jsx
+│   │   │   └── LoginResultados.jsx
 │   │   ├── pages/             # Páginas principales
 │   │   │   ├── Home.jsx
 │   │   │   ├── RegistroEmpresa.jsx
@@ -284,21 +298,32 @@ Si prefieres usar el frontend tradicional, puedes usar Live Server en Visual Stu
 
 1. **Registro de Empresa**: 
    - Navega a la página de registro
-   - Completa el formulario con los datos de la empresa
-   - Obtén la clave de acceso para los empleados
+   - Completa el formulario con los datos de la empresa:
+     - Nombre de la empresa
+     - Cantidad de empleados
+     - Clave de acceso (para empleados)
+     - **Código de acceso a resultados** (guarde este código de forma segura)
+   - El sistema calculará automáticamente la muestra representativa si aplica
+   - Obtendrá dos códigos diferentes:
+     - **Clave de acceso**: Para que los empleados completen los cuestionarios
+     - **Código de acceso a resultados**: Para acceder a los resultados y reportes
 
 2. **Login de Empleado**:
    - Ingresa con la clave de acceso proporcionada por la empresa
    - Selecciona el tipo de cuestionario a realizar
+   - Completa el cuestionario correspondiente
 
 3. **Completar Cuestionarios**:
    - **Acontecimientos Traumáticos**: Para todos los empleados
-   - **Psicosocial Entorno**: Para empresas con 51+ empleados
-   - **Psicosocial Trabajo**: Para empresas con 1-50 empleados
+   - **Psicosocial Entorno**: Para empresas con 51+ empleados (72 preguntas)
+   - **Psicosocial Trabajo**: Para empresas con 1-50 empleados (46 preguntas)
 
 4. **Consulta de Resultados**:
-   - Visita la sección de resultados para ver los reportes
+   - Visita la sección de resultados
+   - **Autenticación requerida**: Ingrese el nombre exacto de la empresa y el código de acceso a resultados
+   - Visualice los reportes con gráficos y estadísticas
    - Revisa las recomendaciones basadas en los resultados
+   - Descarga los reportes en formato PDF o Excel (solo cuando todos los formularios estén completos)
 
 ---
 
@@ -306,8 +331,11 @@ Si prefieres usar el frontend tradicional, puedes usar Live Server en Visual Stu
 
 ### Empresas
 
-- `POST /api/empresas/register` - Registrar nueva empresa
-- `POST /api/empresas/verify-clave` - Verificar clave de empresa
+- `POST /api/empresas` - Registrar nueva empresa
+- `POST /api/empresas/verify-clave` - Verificar clave de empresa (para empleados)
+- `POST /api/empresas/verify-acceso-resultados` - Verificar código de acceso a resultados
+- `GET /api/empresas/con-formulario-completo` - Obtener empresas con formulario completo
+- `GET /api/empresas/con-formulario-basico` - Obtener empresas con formulario básico
 
 ### Empleados
 
@@ -318,7 +346,15 @@ Si prefieres usar el frontend tradicional, puedes usar Live Server en Visual Stu
 - `POST /api/trauma` - Guardar respuestas de cuestionario traumático
 - `POST /api/psicosocial/entorno` - Guardar respuestas de psicosocial entorno
 - `POST /api/psicosocial/trabajo` - Guardar respuestas de psicosocial trabajo
-- `GET /api/psicosocial/resultados/:empresaId` - Obtener resultados de empresa
+
+### Resultados (Protegidos)
+
+- `GET /api/psicosocial/entorno/empresa/:empresaId` - Obtener resultados de entorno (requiere autenticación)
+- `GET /api/psicosocial/trabajo/empresa/:empresaId` - Obtener resultados de trabajo (requiere autenticación)
+
+**Nota**: Los endpoints de resultados requieren headers de autenticación:
+- `x-empresa-nombre`: Nombre exacto de la empresa
+- `x-codigo-acceso`: Código de acceso a resultados
 
 ### Health Check
 
@@ -337,6 +373,11 @@ El backend implementa múltiples medidas de seguridad:
 - **Logging de Seguridad**: Detección de actividades sospechosas
 - **Sanitización de Datos**: Limpieza de datos de entrada
 - **Límites de Tamaño**: Prevención de ataques de tamaño de petición
+- **Autenticación de Resultados**: 
+  - Sistema de doble autenticación (clave para empleados, código para resultados)
+  - Protección de endpoints de resultados mediante middleware de autenticación
+  - Validación de credenciales en cada solicitud de resultados
+  - Prevención de acceso no autorizado a datos sensibles de la empresa
 
 ---
 

@@ -6,13 +6,13 @@ const ResultadoPsicosocial = require('../models/resultadoPsicosocial'); // Aseg�
 // Crear una nueva empresa (modificado para validar muestra representativa)
 exports.createEmpresa = async (req, res) => {
     try {
-        const { nombreEmpresa, cantidadEmpleados, clave, muestraRepresentativa } = req.body;
+        const { nombreEmpresa, cantidadEmpleados, clave, codigoAccesoResultados, muestraRepresentativa } = req.body;
 
         // Validación básica
-        if (!nombreEmpresa || !cantidadEmpleados || !clave) {
+        if (!nombreEmpresa || !cantidadEmpleados || !clave || !codigoAccesoResultados) {
             return res.status(400).json({
                 success: false,
-                message: 'Nombre, cantidad de empleados y clave son requeridos'
+                message: 'Nombre, cantidad de empleados, clave y código de acceso a resultados son requeridos'
             });
         }
 
@@ -31,7 +31,8 @@ exports.createEmpresa = async (req, res) => {
         const empresaData = {
             nombreEmpresa: nombreEmpresa.trim(),
             cantidadEmpleados: cantidad,
-            clave: clave.trim()
+            clave: clave.trim(),
+            codigoAccesoResultados: codigoAccesoResultados.trim()
         };
 
         // Para empresas con más de 50 empleados, se requiere muestra representativa
@@ -360,6 +361,89 @@ exports.getEmpresasConFormularioCompleto = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error al obtener empresas',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
+
+// Autenticación para acceso a resultados
+exports.verifyAccesoResultados = async (req, res) => {
+    try {
+        const { nombreEmpresa, codigoAccesoResultados } = req.body;
+
+        if (!nombreEmpresa || !codigoAccesoResultados) {
+            return res.status(400).json({
+                success: false,
+                message: 'Nombre de empresa y código de acceso son requeridos'
+            });
+        }
+
+        const empresa = await Empresa.findOne({
+            nombreEmpresa: nombreEmpresa.trim(),
+            codigoAccesoResultados: codigoAccesoResultados.trim()
+        });
+
+        if (!empresa) {
+            return res.status(401).json({
+                success: false,
+                message: 'Credenciales inválidas para acceso a resultados'
+            });
+        }
+
+        // Devolver solo el ID de la empresa (sin información sensible)
+        res.json({
+            success: true,
+            message: 'Acceso autorizado a resultados',
+            empresaId: empresa._id,
+            nombreEmpresa: empresa.nombreEmpresa
+        });
+
+    } catch (error) {
+        console.error('Error en verifyAccesoResultados:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error en el servidor',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
+
+// Middleware para verificar acceso a resultados
+exports.verificarAccesoResultados = async (req, res, next) => {
+    try {
+        const { nombreEmpresa, codigoAccesoResultados } = req.body;
+
+        if (!nombreEmpresa || !codigoAccesoResultados) {
+            return res.status(400).json({
+                success: false,
+                message: 'Nombre de empresa y código de acceso son requeridos'
+            });
+        }
+
+        const empresa = await Empresa.findOne({
+            nombreEmpresa: nombreEmpresa.trim(),
+            codigoAccesoResultados: codigoAccesoResultados.trim()
+        });
+
+        if (!empresa) {
+            return res.status(401).json({
+                success: false,
+                message: 'Credenciales inválidas para acceso a resultados'
+            });
+        }
+
+        // Agregar empresaId a la petición para usar en los controladores
+        req.empresaAutenticada = {
+            empresaId: empresa._id,
+            nombreEmpresa: empresa.nombreEmpresa
+        };
+
+        next();
+    } catch (error) {
+        console.error('Error en verificarAccesoResultados:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error en el servidor',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }

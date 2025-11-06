@@ -20,6 +20,13 @@ const validateEmpresa = [
     .matches(/^[a-zA-Z0-9]+$/)
     .withMessage('La clave solo puede contener letras y números'),
   
+  body('codigoAccesoResultados')
+    .trim()
+    .isLength({ min: 4, max: 50 })
+    .withMessage('El código de acceso a resultados debe tener entre 4 y 50 caracteres')
+    .matches(/^[a-zA-Z0-9]+$/)
+    .withMessage('El código de acceso a resultados solo puede contener letras y números'),
+  
   body('muestraRepresentativa')
     .optional()
     .isInt({ min: 1, max: 1000 })

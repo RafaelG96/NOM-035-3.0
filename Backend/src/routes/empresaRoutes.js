@@ -19,6 +19,9 @@ router.post('/', validateEmpresa, handleValidationErrors, empresaController.crea
 // Ruta para verificar la clave de la empresa
 router.post('/verify-clave', validateAuth, handleValidationErrors, empresaController.verifyClave);
 
+// Ruta para verificar acceso a resultados
+router.post('/verify-acceso-resultados', empresaController.verifyAccesoResultados);
+
 // Ruta para obtener todas las empresas
 router.get('/', empresaController.getAllEmpresas);
 

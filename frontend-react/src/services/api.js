@@ -12,11 +12,11 @@ const api = axios.create({
 // Interceptor para manejar errores con mejor logging
 api.interceptors.response.use(
   (response) => {
-    console.log('✅ Respuesta exitosa:', response.config.method.toUpperCase(), response.config.url);
+    console.log('Respuesta exitosa:', response.config.method.toUpperCase(), response.config.url);
     return response;
   },
   (error) => {
-    console.error('❌ Error en la petición:', {
+    console.error('Error en la petición:', {
       url: error.config?.url,
       method: error.config?.method,
       message: error.message,
@@ -35,10 +35,17 @@ api.interceptors.response.use(
       });
     } else if (error.request) {
       // La petición se hizo pero no se recibió respuesta
-      console.error('No hay respuesta del servidor. Verifica que el backend esté corriendo en http://localhost:3000');
+      console.error('Error: No hay respuesta del servidor:', {
+        url: error.config?.url,
+        baseURL: error.config?.baseURL,
+        method: error.config?.method,
+        request: error.request
+      });
+      console.error('Verifica que el backend esté corriendo en:', API_BASE_URL);
       return Promise.reject({ 
         message: 'No se pudo conectar con el servidor. Verifica que el backend esté corriendo.',
-        details: 'El servidor no respondió. ¿Está corriendo en http://localhost:3000?'
+        details: `El servidor no respondió. URL intentada: ${API_BASE_URL}${error.config?.url || ''}`,
+        status: 'NETWORK_ERROR'
       });
     } else {
       // Algo más causó el error
@@ -53,11 +60,17 @@ api.interceptors.response.use(
 // Interceptor para requests (logging)
 api.interceptors.request.use(
   (config) => {
-    console.log('📤 Enviando petición:', config.method.toUpperCase(), config.url);
+    console.log('Enviando petición:', {
+      method: config.method.toUpperCase(),
+      url: config.url,
+      baseURL: config.baseURL,
+      fullURL: `${config.baseURL}${config.url}`,
+      headers: Object.keys(config.headers || {})
+    });
     return config;
   },
   (error) => {
-    console.error('❌ Error al configurar la petición:', error);
+    console.error('Error al configurar la petición:', error);
     return Promise.reject(error);
   }
 );
@@ -66,6 +79,7 @@ api.interceptors.request.use(
 export const empresaAPI = {
   create: (data) => api.post('/empresas', data),
   verifyClave: (data) => api.post('/empresas/verify-clave', data),
+  verifyAccesoResultados: (data) => api.post('/empresas/verify-acceso-resultados', data),
   getById: (id) => api.get(`/empresas/${id}`),
   getConFormularioCompleto: () => api.get('/empresas/con-formulario-completo'),
   getConFormularioBasico: () => api.get('/empresas/con-formulario-basico'),
@@ -81,8 +95,44 @@ export const empleadoAPI = {
 export const psicosocialAPI = {
   entorno: (data) => api.post('/psicosocial/entorno', data),
   trabajo: (data) => api.post('/psicosocial/trabajo', data),
-  getResultadosEntorno: (empresaId) => api.get(`/psicosocial/entorno/empresa/${empresaId}`),
-  getResultadosTrabajo: (empresaId) => api.get(`/psicosocial/trabajo/empresa/${empresaId}`),
+  getResultadosEntorno: (empresaId, credenciales) => {
+    if (!credenciales || !credenciales.nombreEmpresa || !credenciales.codigoAccesoResultados) {
+      console.error('Error: Credenciales faltantes para getResultadosEntorno');
+      return Promise.reject(new Error('Credenciales de autenticación requeridas'));
+    }
+    
+    const config = {
+      headers: {
+        'x-empresa-nombre': credenciales.nombreEmpresa,
+        'x-codigo-acceso': credenciales.codigoAccesoResultados
+      }
+    };
+    console.log('Enviando petición con credenciales:', {
+      empresaId,
+      nombreEmpresa: credenciales.nombreEmpresa,
+      tieneCodigo: !!credenciales.codigoAccesoResultados
+    });
+    return api.get(`/psicosocial/entorno/empresa/${empresaId}`, config);
+  },
+  getResultadosTrabajo: (empresaId, credenciales) => {
+    if (!credenciales || !credenciales.nombreEmpresa || !credenciales.codigoAccesoResultados) {
+      console.error('Error: Credenciales faltantes para getResultadosTrabajo');
+      return Promise.reject(new Error('Credenciales de autenticación requeridas'));
+    }
+    
+    const config = {
+      headers: {
+        'x-empresa-nombre': credenciales.nombreEmpresa,
+        'x-codigo-acceso': credenciales.codigoAccesoResultados
+      }
+    };
+    console.log('Enviando petición con credenciales:', {
+      empresaId,
+      nombreEmpresa: credenciales.nombreEmpresa,
+      tieneCodigo: !!credenciales.codigoAccesoResultados
+    });
+    return api.get(`/psicosocial/trabajo/empresa/${empresaId}`, config);
+  },
 };
 
 // API de Eventos Traumáticos

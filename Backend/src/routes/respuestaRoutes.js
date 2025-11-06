@@ -15,6 +15,9 @@ const {
   preventInjection 
 } = require('../middleware/validation');
 
+// Importar middleware de autenticación para resultados
+const { verificarAccesoPorEmpresaId } = require('../middleware/resultadosAuth');
+
 // Middleware de seguridad aplicado a todas las rutas
 router.use(sanitizeInput);
 router.use(preventInjection);
@@ -36,12 +39,14 @@ router.param('empresaId', (req, res, next, empresaId) => {
 // Rutas para Formulario #2 (Psicosocial-Trabajo)
 // =============================================
 router.post('/trabajo', validateRespuestas, handleValidationErrors, trabajoController.guardarRespuesta);
-router.get('/trabajo/empresa/:empresaId', trabajoController.obtenerResultados);
+// Proteger ruta de resultados con autenticación
+router.get('/trabajo/empresa/:empresaId', verificarAccesoPorEmpresaId, trabajoController.obtenerResultados);
 
 // =============================================
 // Rutas para Formulario #3 (Psicosocial-Entorno)
 // =============================================
 router.post('/entorno', validateRespuestas, handleValidationErrors, entornoController.guardarRespuesta);
-router.get('/entorno/empresa/:empresaId', entornoController.getRespuestasByEmpresa);
+// Proteger ruta de resultados con autenticación
+router.get('/entorno/empresa/:empresaId', verificarAccesoPorEmpresaId, entornoController.getRespuestasByEmpresa);
 
 module.exports = router;
