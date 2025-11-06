@@ -172,12 +172,16 @@ function ResultadosTrabajo() {
     const rangos = {
       'Condiciones en el ambiente de trabajo': [3, 5, 7, 9],
       'Carga de trabajo': [12, 18, 20, 24],
-      'Falta de control sobre el trabajo': [5, 8, 11, 14],
-      'Jornada de trabajo': [1, 2, 4, 9],
-      'Interferencia en la relación trabajo-familia': [1, 2, 4, 9],
+      'Falta de control y autonomía sobre el trabajo': [3, 5, 7, 9],
+      'Limitada o nula posibilidad de desarrollo': [1, 2, 4, 6],
+      'Limitada o inexistente capacitación': [1, 2, 4, 6],
+      'Jornada de trabajo': [1, 2, 4, 6],
+      'Interferencia en la relación trabajo-familia': [1, 2, 4, 6],
       'Liderazgo': [3, 5, 8, 11],
       'Relaciones en el trabajo': [5, 8, 11, 14],
-      'Violencia': [7, 10, 13, 16]
+      'Violencia': [7, 10, 13, 16],
+      // Compatibilidad con nombres antiguos
+      'Falta de control sobre el trabajo': [5, 8, 11, 14]
     }
 
     const limites = rangos[nombre]
@@ -191,26 +195,32 @@ function ResultadosTrabajo() {
   }
 
   const obtenerMaximoCategoriaTrabajo = (nombre) => {
+    // Máximos según la estructura de 46 preguntas del cuestionario de Trabajo
+    // Cada pregunta puede tener máximo 4 puntos
     const maximos = {
-      'Ambiente de trabajo': 9,
-      'Factores propios de la actividad': 40,
-      'Organización del tiempo de trabajo': 12,
-      'Liderazgo y relaciones en el trabajo': 38,
-      'Falta de control sobre el trabajo': 20
+      'Ambiente de trabajo': 12, // 3 preguntas × 4 = 12
+      'Factores propios de la actividad': 52, // 13 preguntas × 4 = 52 (10 básicas + 3 condicionales 41-43)
+      'Organización del tiempo de trabajo': 16, // 4 preguntas × 4 = 16 (2 jornada + 2 trabajo-familia)
+      'Liderazgo y relaciones en el trabajo': 76, // 19 preguntas × 4 = 76 (5 liderazgo + 6 relaciones + 8 violencia)
+      'Falta de control sobre el trabajo': 28 // 7 preguntas × 4 = 28 (3 control + 2 desarrollo + 2 capacitación)
     }
     return maximos[nombre] || 50
   }
 
   const obtenerMaximoDominioTrabajo = (nombre) => {
+    // Máximos por dominio según la estructura de 46 preguntas
+    // Cada pregunta puede tener máximo 4 puntos
     const maximos = {
-      'Condiciones en el ambiente de trabajo': 9,
-      'Carga de trabajo': 24,
-      'Falta de control sobre el trabajo': 14,
-      'Jornada de trabajo': 9,
-      'Interferencia en la relación trabajo-familia': 9,
-      'Liderazgo': 11,
-      'Relaciones en el trabajo': 14,
-      'Violencia': 16
+      'Condiciones en el ambiente de trabajo': 12, // 3 preguntas × 4 = 12
+      'Carga de trabajo': 52, // 13 preguntas × 4 = 52 (10 básicas + 3 condicionales 41-43)
+      'Falta de control y autonomía sobre el trabajo': 12, // 3 preguntas × 4 = 12
+      'Limitada o nula posibilidad de desarrollo': 8, // 2 preguntas × 4 = 8
+      'Limitada o inexistente capacitación': 8, // 2 preguntas × 4 = 8
+      'Jornada de trabajo': 8, // 2 preguntas × 4 = 8
+      'Interferencia en la relación trabajo-familia': 8, // 2 preguntas × 4 = 8
+      'Liderazgo': 20, // 5 preguntas × 4 = 20
+      'Relaciones en el trabajo': 24, // 6 preguntas × 4 = 24 (3 básicas + 3 condicionales 44-46)
+      'Violencia': 32 // 8 preguntas × 4 = 32
     }
     return maximos[nombre] || 30
   }
