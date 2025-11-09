@@ -1,8 +1,18 @@
+import { useState } from 'react'
 import DonutChart from './DonutChart'
 
-function PuntajesGrid({ puntajes, tipo = 'categoria' }) {
+function PuntajesGrid({ puntajes, tipo = 'categoria', infoMap = {}, descripcionGenerica = 'Indicador contemplado en la NOM-035.' }) {
+  const [detallesAbiertos, setDetallesAbiertos] = useState({})
+
   if (!puntajes || Object.keys(puntajes).length === 0) {
     return <p className="text-muted small">No hay datos disponibles</p>
+  }
+
+  const toggleDetalle = (nombre) => {
+    setDetallesAbiertos(prev => ({
+      ...prev,
+      [nombre]: !prev[nombre]
+    }))
   }
 
   const obtenerMaximoParaTipo = (nombre, tipo) => {
@@ -89,14 +99,46 @@ function PuntajesGrid({ puntajes, tipo = 'categoria' }) {
           : obtenerNivelPorDominio(nombre, valor)
         
         return (
-          <DonutChart
-            key={`${tipo}-${index}-${nombre}`}
-            valor={valor}
-            maximo={maximo}
-            nombre={nombre}
-            nivel={nivel}
-            tipo={tipo}
-          />
+          <div key={`${tipo}-${index}-${nombre}`} className="donut-chart-card">
+            <DonutChart
+              valor={valor}
+              maximo={maximo}
+              nombre={nombre}
+              nivel={nivel}
+              tipo={tipo}
+            />
+            <button
+              type="button"
+              className="btn btn-outline-secondary btn-sm px-3 mt-3"
+              onClick={() => toggleDetalle(nombre)}
+            >
+              <i className={`bi ${detallesAbiertos[nombre] ? 'bi-chevron-up' : 'bi-chevron-down'} me-2`}></i>
+              {detallesAbiertos[nombre] ? 'Ocultar detalles' : 'Ver detalles'}
+            </button>
+            {detallesAbiertos[nombre] && (
+              <div className="card shadow-sm border-primary mt-3">
+                <div className="card-body py-3">
+                  <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-2">
+                    <h6 className="card-title mb-2 mb-md-0">
+                      <i className="bi bi-info-circle me-2 text-primary"></i>
+                      {nombre}
+                    </h6>
+                    <div className="d-flex align-items-center gap-2">
+                      <span className="badge bg-primary-subtle text-primary border border-primary">
+                        Puntaje: {valor} / {maximo}
+                      </span>
+                      <span className="badge bg-secondary-subtle text-secondary border border-secondary">
+                        Nivel: {nivel}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="card-text small mb-0 text-muted">
+                    {infoMap[nombre] || descripcionGenerica}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         )
       })}
     </div>

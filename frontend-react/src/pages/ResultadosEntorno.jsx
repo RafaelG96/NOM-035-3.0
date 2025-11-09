@@ -6,6 +6,29 @@ import LoginResultados from '../components/LoginResultados'
 import jsPDF from 'jspdf'
 import * as XLSX from 'xlsx'
 
+const infoCategoriasEntorno = {
+  'Ambiente de trabajo': 'Condiciones físicas y ambientales en el centro de trabajo (iluminación, ruido, higiene).',
+  'Factores propios de la actividad': 'Características de las tareas como esfuerzo mental, responsabilidad y complejidad.',
+  'Organización del tiempo de trabajo': 'Distribución de jornadas, turnos, horas extra y balance vida-trabajo.',
+  'Liderazgo y relaciones en el trabajo': 'Calidad del liderazgo, apoyo de jefes y colaboración entre compañeros.',
+  'Entorno organizacional': 'Prácticas de reconocimiento, sentido de pertenencia y comunicación institucional.'
+}
+
+const infoDominiosEntorno = {
+  'Condiciones en el ambiente de trabajo': 'Aspectos físicos que pueden generar riesgos o incomodidad.',
+  'Carga de trabajo': 'Cantidad de tareas, ritmo y presión por resultados.',
+  'Falta de control y autonomía sobre el trabajo': 'Grado de participación y decisión sobre cómo ejecutar las actividades.',
+  'Jornada de trabajo': 'Duración y distribución de las horas laborales, descansos y turnos.',
+  'Interferencia en la relación trabajo-familia': 'Impacto del trabajo sobre responsabilidades y vida personal.',
+  'Liderazgo': 'Estilo de dirección, claridad de instrucciones y apoyo del jefe.',
+  'Relaciones en el trabajo': 'Ambiente social, comunicación y apoyo entre compañeros.',
+  'Reconocimiento del desempeño': 'Prácticas de retroalimentación y reconocimiento por el trabajo realizado.',
+  'Sentido de pertenencia': 'Identificación con la empresa y percepción de trato justo.',
+  'Formación y capacitación': 'Oportunidades de desarrollo profesional y aprendizaje.'
+}
+
+const descripcionGenerica = 'Este indicador forma parte de los factores psicosociales evaluados por la NOM-035.';
+
 function ResultadosEntorno() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
@@ -16,6 +39,7 @@ function ResultadosEntorno() {
   const [empresaId] = useState(localStorage.getItem('empresaId'))
   const [credenciales, setCredenciales] = useState(null)
   const [showLogin, setShowLogin] = useState(false)
+  const [vistaActiva, setVistaActiva] = useState({})
 
   useEffect(() => {
     // Limpiar credenciales almacenadas al ingresar
@@ -133,6 +157,13 @@ function ResultadosEntorno() {
     setResultados(null)
     setEmpresaSeleccionada('')
     setShowLogin(true)
+  }
+
+  const handleVistaCambio = (indice, vista) => {
+    setVistaActiva(prev => ({
+      ...prev,
+      [indice]: vista
+    }))
   }
 
   const loadResultados = async (id) => {
@@ -736,53 +767,62 @@ function ResultadosEntorno() {
                       
                       <div className="card-body">
                         <div className="container">
-                          <div className="row justify-content-center">
-                            {/* Categorías */}
-                            <div className="col-md-6 mb-4">
-                              <div className="card">
-                                <div className="card-header bg-light">
-                                  <h6 className="mb-0 text-center">
-                                    <i className="bi bi-layers me-2"></i>Puntajes por Categoría
-                                  </h6>
-                                </div>
-                                <div className="card-body">
-                                  {respuesta.puntajesPorCategoria && Object.keys(respuesta.puntajesPorCategoria).length > 0 ? (
-                                    <PuntajesGrid 
-                                      puntajes={respuesta.puntajesPorCategoria} 
-                                      tipo="categoria"
-                                    />
-                                  ) : (
-                                    <div className="alert alert-warning">
-                                      <p className="mb-0">No hay datos de categorías disponibles para esta respuesta.</p>
-                                      <small>Puntaje total: {respuesta.puntajeTotal || 0}</small>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
+                          <div className="d-flex justify-content-center mb-3">
+                            <div className="btn-group" role="group" aria-label="Vista de puntajes">
+                              <button
+                                type="button"
+                                className={`btn btn-outline-primary btn-sm ${(vistaActiva[index] || 'categorias') === 'categorias' ? 'active' : ''}`}
+                                onClick={() => handleVistaCambio(index, 'categorias')}
+                              >
+                                <i className="bi bi-layers me-1"></i>Categorías
+                              </button>
+                              <button
+                                type="button"
+                                className={`btn btn-outline-primary btn-sm ${vistaActiva[index] === 'dominios' ? 'active' : ''}`}
+                                onClick={() => handleVistaCambio(index, 'dominios')}
+                              >
+                                <i className="bi bi-diagram-3 me-1"></i>Dominios
+                              </button>
                             </div>
-
-                            {/* Dominios */}
-                            <div className="col-md-6 mb-4">
-                              <div className="card">
-                                <div className="card-header bg-light">
-                                  <h6 className="mb-0 text-center">
-                                    <i className="bi bi-diagram-3 me-2"></i>Puntajes por Dominio
-                                  </h6>
-                                </div>
-                                <div className="card-body">
-                                  {respuesta.puntajesPorDominio && Object.keys(respuesta.puntajesPorDominio).length > 0 ? (
-                                    <PuntajesGrid 
-                                      puntajes={respuesta.puntajesPorDominio} 
-                                      tipo="dominio"
-                                    />
-                                  ) : (
-                                    <div className="alert alert-warning">
-                                      <p className="mb-0">No hay datos de dominios disponibles para esta respuesta.</p>
-                                      <small>Puntaje total: {respuesta.puntajeTotal || 0}</small>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
+                          </div>
+                          <div className="card h-100">
+                            <div className="card-header bg-light text-center">
+                              <h6 className="mb-0">
+                                {(vistaActiva[index] || 'categorias') === 'categorias'
+                                  ? <><i className="bi bi-layers me-2"></i>Puntajes por Categoría</>
+                                  : <><i className="bi bi-diagram-3 me-2"></i>Puntajes por Dominio</>}
+                              </h6>
+                            </div>
+                            <div className="card-body">
+                              {(vistaActiva[index] || 'categorias') === 'categorias' ? (
+                                respuesta.puntajesPorCategoria && Object.keys(respuesta.puntajesPorCategoria).length > 0 ? (
+                                  <PuntajesGrid 
+                                    puntajes={respuesta.puntajesPorCategoria} 
+                                    tipo="categoria"
+                                    infoMap={infoCategoriasEntorno}
+                                    descripcionGenerica={descripcionGenerica}
+                                  />
+                                ) : (
+                                  <div className="alert alert-warning">
+                                    <p className="mb-0">No hay datos de categorías disponibles para esta respuesta.</p>
+                                    <small>Puntaje total: {respuesta.puntajeTotal || 0}</small>
+                                  </div>
+                                )
+                              ) : (
+                                respuesta.puntajesPorDominio && Object.keys(respuesta.puntajesPorDominio).length > 0 ? (
+                                  <PuntajesGrid 
+                                    puntajes={respuesta.puntajesPorDominio} 
+                                    tipo="dominio"
+                                    infoMap={infoDominiosEntorno}
+                                    descripcionGenerica={descripcionGenerica}
+                                  />
+                                ) : (
+                                  <div className="alert alert-warning">
+                                    <p className="mb-0">No hay datos de dominios disponibles para esta respuesta.</p>
+                                    <small>Puntaje total: {respuesta.puntajeTotal || 0}</small>
+                                  </div>
+                                )
+                              )}
                             </div>
                           </div>
                         </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { psicosocialAPI } from '../services/api'
 import QuestionForm from '../components/QuestionForm'
+import FeedbackModal from '../components/FeedbackModal'
 
 function PsicosocialTrabajo() {
   const navigate = useNavigate()
@@ -12,6 +13,23 @@ function PsicosocialTrabajo() {
   const [esJefe, setEsJefe] = useState('')
   const [showClientesQuestions, setShowClientesQuestions] = useState(false)
   const [showJefeQuestions, setShowJefeQuestions] = useState(false)
+  const [feedback, setFeedback] = useState({
+    show: false,
+    title: '',
+    message: '',
+    theme: 'primary',
+    autoClose: 4000,
+    afterClose: null
+  })
+  const handleFeedbackClose = () => {
+    setFeedback(prev => {
+      const callback = prev.afterClose
+      if (callback) {
+        setTimeout(callback, 0)
+      }
+      return { ...prev, show: false, afterClose: null }
+    })
+  }
 
   // Preguntas del formulario psicosocial trabajo - 46 preguntas según NOM-035
   const questions = [
@@ -70,8 +88,14 @@ function PsicosocialTrabajo() {
     const storedEmpresaNombre = localStorage.getItem('empresaNombre')
     
     if (!storedEmpresaId || !storedEmpresaNombre) {
-      alert('No se encontraron datos de autenticación. Por favor, inicie sesión nuevamente.')
-      navigate('/intermedio')
+      setFeedback({
+        show: true,
+        title: 'Sesión requerida',
+        message: 'No se encontraron datos de autenticación. Inicia sesión nuevamente para continuar.',
+        theme: 'warning',
+        autoClose: 3500,
+        afterClose: () => navigate('/intermedio')
+      })
       return
     }
 
@@ -86,29 +110,60 @@ function PsicosocialTrabajo() {
 
   const handleSubmit = async (formData) => {
     if (!empresaId) {
-      alert('Por favor inicie sesión primero')
+      setFeedback({
+        show: true,
+        title: 'Sesión requerida',
+        message: 'Por favor inicia sesión antes de completar el cuestionario.',
+        theme: 'danger',
+        autoClose: 3500,
+        afterClose: () => navigate('/intermedio')
+      })
       return
     }
 
     if (!servicioClientes || !esJefe) {
-      alert('Por favor responda las preguntas sobre servicio a clientes y si es jefe')
+      setFeedback({
+        show: true,
+        title: 'Información faltante',
+        message: 'Responde si brindas servicio a clientes y si eres jefe para continuar.',
+        theme: 'warning',
+        autoClose: 3500,
+        afterClose: null
+      })
       return
     }
 
     setLoading(true)
 
     try {
-      // Construir objeto de preguntas igual al frontend anterior
       const preguntas = {}
-      
-      // Agregar preguntas 1-40 (obligatorias)
+
       for (let i = 1; i <= 40; i++) {
         if (formData[`pregunta${i}`]) {
           preguntas[`pregunta${i}`] = formData[`pregunta${i}`]
         }
       }
 
-      // Agregar preguntas condicionales de clientes (41-43) solo si corresponde
+      const preguntasFaltantes = []
+      for (let i = 1; i <= 40; i++) {
+        if (!preguntas[`pregunta${i}`]) {
+          preguntasFaltantes.push(i)
+        }
+      }
+
+      if (preguntasFaltantes.length > 0) {
+        setFeedback({
+          show: true,
+          title: 'Respuestas incompletas',
+          message: `Faltan respuestas obligatorias: ${preguntasFaltantes.join(', ')}`,
+          theme: 'warning',
+          autoClose: 4000,
+          afterClose: null
+        })
+        setLoading(false)
+        return
+      }
+
       if (servicioClientes === 'Sí') {
         for (let i = 41; i <= 43; i++) {
           if (formData[`pregunta${i}`]) {
@@ -117,7 +172,6 @@ function PsicosocialTrabajo() {
         }
       }
 
-      // Agregar preguntas condicionales de jefe (44-46) solo si corresponde
       if (esJefe === 'Sí') {
         for (let i = 44; i <= 46; i++) {
           if (formData[`pregunta${i}`]) {
@@ -130,15 +184,28 @@ function PsicosocialTrabajo() {
         empresaId,
         servicioClientes: servicioClientes === 'Sí',
         esJefe: esJefe === 'Sí',
-        preguntas: preguntas,
+        preguntas,
         timestamp: new Date().toISOString()
       }
 
       await psicosocialAPI.trabajo(data)
-      alert('Formulario enviado exitosamente')
-      navigate('/resultados-trabajo')
+      setFeedback({
+        show: true,
+        title: '¡Gracias!',
+        message: 'Tus respuestas se guardaron con éxito. Serás redirigido a los resultados.',
+        theme: 'success',
+        autoClose: 2500,
+        afterClose: () => navigate('/resultados-trabajo')
+      })
     } catch (error) {
-      alert(error.message || 'Error al enviar el formulario')
+      setFeedback({
+        show: true,
+        title: 'Error al enviar',
+        message: error.message || 'No se pudo registrar el cuestionario. Inténtalo más tarde.',
+        theme: 'danger',
+        autoClose: 4000,
+        afterClose: null
+      })
     } finally {
       setLoading(false)
     }
@@ -146,6 +213,14 @@ function PsicosocialTrabajo() {
 
   return (
     <div className="container py-5">
+      <FeedbackModal
+        show={feedback.show}
+        title={feedback.title}
+        message={feedback.message}
+        theme={feedback.theme}
+        autoClose={feedback.autoClose}
+        onClose={handleFeedbackClose}
+      />
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1 className="mb-0">Cuestionario Psicosocial - Trabajo</h1>
         <div className="badge bg-primary fs-6">

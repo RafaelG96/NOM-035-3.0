@@ -6,6 +6,29 @@ import LoginResultados from '../components/LoginResultados'
 import jsPDF from 'jspdf'
 import * as XLSX from 'xlsx'
 
+const infoCategoriasTrabajo = {
+  'Ambiente de trabajo': 'Evalúa las condiciones físicas (luz, ruido, higiene) que pueden afectar la seguridad o comodidad.',
+  'Factores propios de la actividad': 'Mide la carga mental y física de las tareas, así como su complejidad y ritmo.',
+  'Organización del tiempo de trabajo': 'Analiza horarios, jornadas extendidas y balance trabajo-vida.',
+  'Liderazgo y relaciones en el trabajo': 'Revisa la calidad del liderazgo, apoyo y convivencia entre compañeros.',
+  'Falta de control sobre el trabajo': 'Determina el grado de autonomía para decidir cómo y cuándo realizar tareas.'
+}
+
+const infoDominiosTrabajo = {
+  'Condiciones en el ambiente de trabajo': 'Condiciones físicas y ambientales que pueden ser riesgosas o molestas.',
+  'Carga de trabajo': 'Cantidad de actividades y tiempos límite asignados a la persona.',
+  'Falta de control y autonomía sobre el trabajo': 'Posibilidad de decidir ritmo, pausas y método para cumplir tareas.',
+  'Limitada o nula posibilidad de desarrollo': 'Oportunidades de crecimiento y aprendizaje dentro del puesto.',
+  'Limitada o inexistente capacitación': 'Disponibilidad de capacitación y entrenamiento adecuados.',
+  'Jornada de trabajo': 'Duración y distribución de la jornada laboral y el impacto de las horas extra.',
+  'Interferencia en la relación trabajo-familia': 'Efectos del trabajo sobre la vida familiar y personal.',
+  'Liderazgo': 'Calidad del trato y dirección de los superiores.',
+  'Relaciones en el trabajo': 'Ambiente social y apoyo entre compañeros.',
+  'Violencia': 'Presencia de hostigamiento, maltrato o agresiones en el entorno laboral.'
+}
+
+const descripcionGenerica = 'Este indicador forma parte de los factores psicosociales evaluados por la NOM-035.'
+
 function ResultadosTrabajo() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
@@ -16,6 +39,7 @@ function ResultadosTrabajo() {
   const [empresaId] = useState(localStorage.getItem('empresaId'))
   const [credenciales, setCredenciales] = useState(null)
   const [showLogin, setShowLogin] = useState(false)
+  const [vistaActiva, setVistaActiva] = useState({})
 
   useEffect(() => {
     localStorage.removeItem('resultadosAuth')
@@ -132,6 +156,13 @@ function ResultadosTrabajo() {
     setResultados(null)
     setEmpresaSeleccionada('')
     setShowLogin(true)
+  }
+
+  const handleVistaCambio = (indice, vista) => {
+    setVistaActiva(prev => ({
+      ...prev,
+      [indice]: vista
+    }))
   }
 
   const loadResultados = async (id) => {
@@ -264,7 +295,33 @@ function ResultadosTrabajo() {
   }
 
   // Obtener nivel de categoría/dominio para trabajo
+  const infoCategoriasTrabajo = {
+    'Ambiente de trabajo': 'Evalúa las condiciones físicas (luz, ruido, higiene) que pueden afectar la seguridad o comodidad.',
+    'Factores propios de la actividad': 'Mide la carga mental y física de las tareas, así como su complejidad y ritmo.',
+    'Organización del tiempo de trabajo': 'Analiza horarios, jornadas extendidas y balance trabajo-vida.',
+    'Liderazgo y relaciones en el trabajo': 'Revisa la calidad del liderazgo, apoyo y convivencia entre compañeros.',
+    'Falta de control sobre el trabajo': 'Determina el grado de autonomía para decidir cómo y cuándo realizar tareas.'
+  }
+
+  const infoDominiosTrabajo = {
+    'Condiciones en el ambiente de trabajo': 'Condiciones físicas y ambientales que pueden ser riesgosas o molestas.',
+    'Carga de trabajo': 'Cantidad de actividades y tiempos límite asignados a la persona.',
+    'Falta de control y autonomía sobre el trabajo': 'Posibilidad de decidir ritmo, pausas y método para cumplir tareas.',
+    'Limitada o nula posibilidad de desarrollo': 'Oportunidades de crecimiento y aprendizaje dentro del puesto.',
+    'Limitada o inexistente capacitación': 'Disponibilidad de capacitación y entrenamiento adecuados.',
+    'Jornada de trabajo': 'Duración y distribución de la jornada laboral y el impacto de las horas extra.',
+    'Interferencia en la relación trabajo-familia': 'Efectos del trabajo sobre la vida familiar y personal.',
+    'Liderazgo': 'Calidad del trato y dirección de los superiores.',
+    'Relaciones en el trabajo': 'Ambiente social y apoyo entre compañeros.',
+    'Violencia': 'Presencia de hostigamiento, maltrato o agresiones en el entorno laboral.'
+  }
+
   const obtenerNivelPorCategoriaTrabajo = (nombre, puntaje) => {
+                                <p className="text-muted small mb-1">
+                                  {(vistaActiva[index] || 'categorias') === 'categorias'
+                                    ? elInfoTooltipsTrabajo.infoCategoriasTrabajo?.descripcion
+                                    : ''}
+                                </p>
     const rangos = {
       'Ambiente de trabajo': [3, 5, 7, 9],
       'Factores propios de la actividad': [10, 20, 30, 40],
@@ -864,53 +921,62 @@ function ResultadosTrabajo() {
                         
                         <div className="card-body">
                           <div className="container">
-                            <div className="row justify-content-center">
-                              {/* Categorías */}
-                              <div className="col-md-6 mb-4">
-                                <div className="card">
-                                  <div className="card-header bg-light">
-                                    <h6 className="mb-0 text-center">
-                                      <i className="bi bi-layers me-2"></i>Puntajes por Categoría
-                                    </h6>
-                                  </div>
-                                  <div className="card-body">
-                                    {Object.keys(categoriasDict).length > 0 ? (
-                                      <PuntajesGrid 
-                                        puntajes={categoriasDict} 
-                                        tipo="categoria"
-                                      />
-                                    ) : (
-                                      <div className="alert alert-warning">
-                                        <p className="mb-0">No hay datos de categorías disponibles para esta respuesta.</p>
-                                        <small>Puntaje total: {respuesta.puntajeTotal || 0}</small>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
+                            <div className="d-flex justify-content-center mb-3">
+                              <div className="btn-group" role="group" aria-label="Vista de puntajes">
+                                <button
+                                  type="button"
+                                  className={`btn btn-outline-primary btn-sm ${ (vistaActiva[index] || 'categorias') === 'categorias' ? 'active' : '' }`}
+                                  onClick={() => handleVistaCambio(index, 'categorias')}
+                                >
+                                  <i className="bi bi-layers me-1"></i>Categorías
+                                </button>
+                                <button
+                                  type="button"
+                                  className={`btn btn-outline-primary btn-sm ${ vistaActiva[index] === 'dominios' ? 'active' : '' }`}
+                                  onClick={() => handleVistaCambio(index, 'dominios')}
+                                >
+                                  <i className="bi bi-diagram-3 me-1"></i>Dominios
+                                </button>
                               </div>
-
-                              {/* Dominios */}
-                              <div className="col-md-6 mb-4">
-                                <div className="card">
-                                  <div className="card-header bg-light">
-                                    <h6 className="mb-0 text-center">
-                                      <i className="bi bi-diagram-3 me-2"></i>Puntajes por Dominio
-                                    </h6>
-                                  </div>
-                                  <div className="card-body">
-                                    {Object.keys(dominiosDict).length > 0 ? (
-                                      <PuntajesGrid 
-                                        puntajes={dominiosDict} 
-                                        tipo="dominio"
-                                      />
-                                    ) : (
-                                      <div className="alert alert-warning">
-                                        <p className="mb-0">No hay datos de dominios disponibles para esta respuesta.</p>
-                                        <small>Puntaje total: {respuesta.puntajeTotal || 0}</small>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
+                            </div>
+                            <div className="card h-100">
+                              <div className="card-header bg-light text-center">
+                                <h6 className="mb-0">
+                                  {(vistaActiva[index] || 'categorias') === 'categorias'
+                                    ? <><i className="bi bi-layers me-2"></i>Puntajes por Categoría</>
+                                    : <><i className="bi bi-diagram-3 me-2"></i>Puntajes por Dominio</>}
+                                </h6>
+                              </div>
+                              <div className="card-body">
+                                {(vistaActiva[index] || 'categorias') === 'categorias' ? (
+                                  Object.keys(categoriasDict).length > 0 ? (
+                                    <PuntajesGrid 
+                                      puntajes={categoriasDict} 
+                                      tipo="categoria"
+                                      infoMap={infoCategoriasTrabajo}
+                                      descripcionGenerica={descripcionGenerica}
+                                    />
+                                  ) : (
+                                    <div className="alert alert-warning">
+                                      <p className="mb-0">No hay datos de categorías disponibles para esta respuesta.</p>
+                                      <small>Puntaje total: {respuesta.puntajeTotal || 0}</small>
+                                    </div>
+                                  )
+                                ) : (
+                                  Object.keys(dominiosDict).length > 0 ? (
+                                    <PuntajesGrid 
+                                      puntajes={dominiosDict} 
+                                      tipo="dominio"
+                                      infoMap={infoDominiosTrabajo}
+                                      descripcionGenerica={descripcionGenerica}
+                                    />
+                                  ) : (
+                                    <div className="alert alert-warning">
+                                      <p className="mb-0">No hay datos de dominios disponibles para esta respuesta.</p>
+                                      <small>Puntaje total: {respuesta.puntajeTotal || 0}</small>
+                                    </div>
+                                  )
+                                )}
                               </div>
                             </div>
                           </div>

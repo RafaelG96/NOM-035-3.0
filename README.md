@@ -56,6 +56,10 @@ La norma busca establecer los elementos para:
   - Validación estricta de credenciales (claves de 6 dígitos numéricos y códigos de 8 caracteres alfanuméricos)
   - Bloqueo temporal con cronómetro visual tras intentos fallidos tanto en el login de empleados como en el acceso a resultados
   - Cierre automático de sesión al abandonar las pantallas de resultados para evitar accesos persistentes
+- **Experiencia de Usuario Renovada**:
+  - Modales de feedback estilizados para logins y envíos (éxito, advertencia, error) con autocierre y redirecciones
+  - Gráficos con detalles desplegables que describen cada categoría y dominio, mostrando puntajes y niveles
+  - Validaciones contextuales que alertan de preguntas obligatorias faltantes sin interrumpir el flujo
 - **Cuestionarios Digitales**:
   - **Acontecimientos Traumáticos Severos**: Evaluación de eventos traumáticos
   - **Factores de Riesgo Psicosocial - Entorno**: Para empresas con 51+ empleados (72 preguntas)
