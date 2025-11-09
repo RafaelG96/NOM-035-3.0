@@ -1,0 +1,164 @@
+/* Estilos generales */
+body {
+  padding-top: 70px;
+  background-color: #f8f9fa;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.container {
+  max-width: 1200px;
+}
+
+/* Estilos para las tarjetas de preguntas */
+.card {
+  border-radius: 10px;
+  border: none;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.card-header {
+  border-radius: 10px 10px 0 0 !important;
+  padding: 15px 20px;
+}
+
+.card-body {
+  padding: 25px;
+}
+
+/* Estilos para las pestañas */
+.nav-tabs {
+  border-bottom: 2px solid #dee2e6;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+
+.nav-tabs .nav-link {
+  border: none;
+  color: #495057;
+  font-weight: 500;
+  padding: 10px 15px;
+  border-radius: 5px 5px 0 0;
+  margin-right: 5px;
+  transition: all 0.3s;
+}
+
+.nav-tabs .nav-link:hover {
+  color: #0d6efd;
+  background-color: rgba(13, 110, 253, 0.1);
+}
+
+.nav-tabs .nav-link.active {
+  color: #0d6efd;
+  background-color: rgba(13, 110, 253, 0.1);
+  border-bottom: 3px solid #0d6efd;
+}
+
+/* Estilos para los formularios */
+.form-label {
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.form-select, .form-control {
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  transition: border-color 0.3s;
+}
+
+.form-select:focus, .form-control:focus {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Estilos para los botones */
+.btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.btn-primary {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+  background-color: #0b5ed7;
+  border-color: #0a58ca;
+}
+
+.btn-outline-primary {
+  color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.btn-outline-primary:hover {
+  background-color: #0d6efd;
+  color: white;
+}
+
+/* Estilos para el contador */
+#contador {
+  font-size: 1rem;
+  padding: 8px 12px;
+}
+
+/* Estilos para grupos de preguntas */
+.question-group {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Estilos para el modal */
+.modal-content {
+  border-radius: 10px;
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+  .nav-tabs .nav-link {
+    font-size: 0.85rem;
+    padding: 8px 12px;
+  }
+  
+  .card-body {
+    padding: 15px;
+  }
+  
+  .btn {
+    padding: 8px 15px;
+  }
+}
+
+/* Scroll personalizado para navegadores WebKit */
+::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
