@@ -52,6 +52,10 @@ La norma busca establecer los elementos para:
   - Sistema de login específico para acceder a los resultados
   - Protección de datos sensibles de la empresa mediante nombre y código de acceso
   - Solo usuarios autorizados pueden visualizar los resultados
+- **Controles de Seguridad Mejorados**:
+  - Validación estricta de credenciales (claves de 6 dígitos numéricos y códigos de 8 caracteres alfanuméricos)
+  - Bloqueo temporal con cronómetro visual tras intentos fallidos tanto en el login de empleados como en el acceso a resultados
+  - Cierre automático de sesión al abandonar las pantallas de resultados para evitar accesos persistentes
 - **Cuestionarios Digitales**:
   - **Acontecimientos Traumáticos Severos**: Evaluación de eventos traumáticos
   - **Factores de Riesgo Psicosocial - Entorno**: Para empresas con 51+ empleados (72 preguntas)
@@ -229,9 +233,11 @@ Crear archivo `.env` en la carpeta `Backend/`:
 
 ```env
 PORT=3000
-MONGO_URI=mongodb://localhost:27017/nom035DB
+MONGO_URI=mongodb+srv://<usuario>:<password>@<cluster>/<nombreBD>?retryWrites=true&w=majority&appName=Cluster0
 NODE_ENV=development
 ```
+
+> ⚠️ **Importante:** si utilizas MongoDB Atlas, reemplaza `<usuario>`, `<password>`, `<cluster>` y `<nombreBD>` con tus valores reales. Para ambientes locales puedes mantener la URI tradicional (`mongodb://localhost:27017/nom035DB`).
 
 #### 3. Configurar el Frontend React (Recomendado)
 
@@ -324,6 +330,7 @@ Si prefieres usar el frontend tradicional, puedes usar Live Server en Visual Stu
    - Visualice los reportes con gráficos y estadísticas
    - Revisa las recomendaciones basadas en los resultados
    - Descarga los reportes en formato PDF o Excel (solo cuando todos los formularios estén completos)
+   - Al salir de la vista de resultados se cierra automáticamente la sesión y se solicitarán de nuevo las credenciales en el siguiente acceso
 
 ---
 

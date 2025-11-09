@@ -14,12 +14,18 @@ function ResultadosTrabajo() {
   const [empresas, setEmpresas] = useState([])
   const [empresaSeleccionada, setEmpresaSeleccionada] = useState('')
   const [empresaId] = useState(localStorage.getItem('empresaId'))
-  const [credenciales, setCredenciales] = useState(() => {
-    // Intentar cargar credenciales del localStorage
-    const saved = localStorage.getItem('resultadosAuth')
-    return saved ? JSON.parse(saved) : null
-  })
+  const [credenciales, setCredenciales] = useState(null)
   const [showLogin, setShowLogin] = useState(false)
+
+  useEffect(() => {
+    localStorage.removeItem('resultadosAuth')
+    setCredenciales(null)
+    setShowLogin(true)
+
+    return () => {
+      localStorage.removeItem('resultadosAuth')
+    }
+  }, [])
 
   useEffect(() => {
     // Verificar si hay credenciales guardadas

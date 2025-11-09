@@ -3,10 +3,15 @@ const Respuesta = require('../models/respuesta'); // Asegúrate de tener este mo
 const mongoose = require('mongoose');
 const ResultadoPsicosocial = require('../models/resultadoPsicosocial'); // Asegúrate de importar el modelo correcto
 
+const escapeRegExp = (string = '') => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 // Crear una nueva empresa (modificado para validar muestra representativa)
 exports.createEmpresa = async (req, res) => {
     try {
         const { nombreEmpresa, cantidadEmpleados, clave, codigoAccesoResultados, muestraRepresentativa } = req.body;
+
+        const claveRegex = /^\d{6}$/;
+        const codigoRegex = /^[A-Za-z0-9]{8}$/;
 
         // Validación básica
         if (!nombreEmpresa || !cantidadEmpleados || !clave || !codigoAccesoResultados) {
@@ -28,11 +33,25 @@ exports.createEmpresa = async (req, res) => {
 
         // El tipoFormulario se asigna automáticamente en el modelo según cantidadEmpleados
         // No aceptamos tipoFormulario del frontend para evitar inconsistencias
+        if (!claveRegex.test(String(clave).trim())) {
+            return res.status(400).json({
+                success: false,
+                message: 'La clave de acceso debe estar compuesta por exactamente 6 dígitos numéricos'
+            });
+        }
+
+        if (!codigoRegex.test(String(codigoAccesoResultados).trim())) {
+            return res.status(400).json({
+                success: false,
+                message: 'El código de acceso a resultados debe contener exactamente 8 caracteres alfanuméricos (letras y números, sin símbolos)'
+            });
+        }
+
         const empresaData = {
             nombreEmpresa: nombreEmpresa.trim(),
             cantidadEmpleados: cantidad,
-            clave: clave.trim(),
-            codigoAccesoResultados: codigoAccesoResultados.trim()
+            clave: String(clave).trim(),
+            codigoAccesoResultados: String(codigoAccesoResultados).trim().toUpperCase()
         };
 
         // Para empresas con más de 50 empleados, se requiere muestra representativa
@@ -81,6 +100,7 @@ exports.createEmpresa = async (req, res) => {
 exports.verifyClave = async (req, res) => {
     try {
         const { nombreEmpresa, clave } = req.body;
+        const claveRegex = /^\d{6}$/;
 
         if (!nombreEmpresa || !clave) {
             return res.status(400).json({
@@ -89,9 +109,16 @@ exports.verifyClave = async (req, res) => {
             });
         }
 
+        if (!claveRegex.test(String(clave).trim())) {
+            return res.status(400).json({
+                success: false,
+                message: 'La clave de acceso debe contener exactamente 6 dígitos numéricos'
+            });
+        }
+
         const empresa = await Empresa.findOne({
             nombreEmpresa: nombreEmpresa.trim(),
-            clave: clave.trim()
+            clave: String(clave).trim()
         });
 
         if (!empresa) {
@@ -370,6 +397,7 @@ exports.getEmpresasConFormularioCompleto = async (req, res) => {
 exports.verifyAccesoResultados = async (req, res) => {
     try {
         const { nombreEmpresa, codigoAccesoResultados } = req.body;
+        const codigoRegex = /^[A-Za-z0-9]{8}$/;
 
         if (!nombreEmpresa || !codigoAccesoResultados) {
             return res.status(400).json({
@@ -378,12 +406,27 @@ exports.verifyAccesoResultados = async (req, res) => {
             });
         }
 
+        const codigoNormalizado = String(codigoAccesoResultados).trim().toUpperCase();
+        if (!codigoRegex.test(codigoNormalizado)) {
+            return res.status(400).json({
+                success: false,
+                message: 'El código de acceso debe contener exactamente 8 caracteres alfanuméricos (letras y números, sin símbolos)'
+            });
+        }
+
+        const nombreNormalizado = String(nombreEmpresa).trim();
         const empresa = await Empresa.findOne({
-            nombreEmpresa: nombreEmpresa.trim(),
-            codigoAccesoResultados: codigoAccesoResultados.trim()
+            nombreEmpresa: { $regex: new RegExp(`^${escapeRegExp(nombreNormalizado)}$`, 'i') }
         });
 
         if (!empresa) {
+            return res.status(401).json({
+                success: false,
+                message: 'Credenciales inválidas para acceso a resultados'
+            });
+        }
+
+        if (String(empresa.codigoAccesoResultados || '').toUpperCase() !== codigoNormalizado) {
             return res.status(401).json({
                 success: false,
                 message: 'Credenciales inválidas para acceso a resultados'
@@ -412,6 +455,7 @@ exports.verifyAccesoResultados = async (req, res) => {
 exports.verificarAccesoResultados = async (req, res, next) => {
     try {
         const { nombreEmpresa, codigoAccesoResultados } = req.body;
+        const codigoRegex = /^[A-Za-z0-9]{8}$/;
 
         if (!nombreEmpresa || !codigoAccesoResultados) {
             return res.status(400).json({
@@ -420,12 +464,27 @@ exports.verificarAccesoResultados = async (req, res, next) => {
             });
         }
 
+        const codigoNormalizado = String(codigoAccesoResultados).trim().toUpperCase();
+        if (!codigoRegex.test(codigoNormalizado)) {
+            return res.status(400).json({
+                success: false,
+                message: 'El código de acceso debe contener exactamente 8 caracteres alfanuméricos (letras y números, sin símbolos)'
+            });
+        }
+
+        const nombreNormalizado = String(nombreEmpresa).trim();
         const empresa = await Empresa.findOne({
-            nombreEmpresa: nombreEmpresa.trim(),
-            codigoAccesoResultados: codigoAccesoResultados.trim()
+            nombreEmpresa: { $regex: new RegExp(`^${escapeRegExp(nombreNormalizado)}$`, 'i') }
         });
 
         if (!empresa) {
+            return res.status(401).json({
+                success: false,
+                message: 'Credenciales inválidas para acceso a resultados'
+            });
+        }
+
+        if (String(empresa.codigoAccesoResultados || '').toUpperCase() !== codigoNormalizado) {
             return res.status(401).json({
                 success: false,
                 message: 'Credenciales inválidas para acceso a resultados'

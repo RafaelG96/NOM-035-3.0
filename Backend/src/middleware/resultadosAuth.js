@@ -4,8 +4,8 @@ const Empresa = require('../models/empresa');
 const verificarAccesoResultados = async (req, res, next) => {
     try {
         // Obtener credenciales del header o del body
-        const nombreEmpresa = req.headers['x-empresa-nombre'] || req.body.nombreEmpresa;
-        const codigoAccesoResultados = req.headers['x-codigo-acceso'] || req.body.codigoAccesoResultados;
+        const nombreEmpresa = (req.headers['x-empresa-nombre'] || req.body.nombreEmpresa || '').trim();
+        const codigoAccesoResultados = (req.headers['x-codigo-acceso'] || req.body.codigoAccesoResultados || '').trim();
 
         if (!nombreEmpresa || !codigoAccesoResultados) {
             return res.status(401).json({
@@ -14,13 +14,13 @@ const verificarAccesoResultados = async (req, res, next) => {
             });
         }
 
+        const codigoNormalizado = codigoAccesoResultados.toUpperCase();
         // Buscar empresa con las credenciales proporcionadas
         const empresa = await Empresa.findOne({
-            nombreEmpresa: nombreEmpresa.trim(),
-            codigoAccesoResultados: codigoAccesoResultados.trim()
+            nombreEmpresa: { $regex: new RegExp(`^${escapeRegex(nombreEmpresa)}$`, 'i') }
         });
 
-        if (!empresa) {
+        if (!empresa || String(empresa.codigoAccesoResultados || '').toUpperCase() !== codigoNormalizado) {
             return res.status(401).json({
                 success: false,
                 message: 'Credenciales inválidas. Verifique el nombre de la empresa y el código de acceso.'
@@ -50,12 +50,12 @@ const verificarAccesoPorEmpresaId = async (req, res, next) => {
         const empresaId = req.params.empresaId || req.query.empresaId;
         
         // Express normaliza headers a minúsculas, pero también verificar variaciones
-        const nombreEmpresa = req.headers['x-empresa-nombre'] || 
+        const nombreEmpresa = (req.headers['x-empresa-nombre'] || 
                              req.headers['X-Empresa-Nombre'] || 
-                             req.body.nombreEmpresa;
-        const codigoAccesoResultados = req.headers['x-codigo-acceso'] || 
+                             req.body.nombreEmpresa || '').trim();
+        const codigoAccesoResultados = (req.headers['x-codigo-acceso'] || 
                                       req.headers['X-Codigo-Acceso'] || 
-                                      req.body.codigoAccesoResultados;
+                                      req.body.codigoAccesoResultados || '').trim();
 
         // Log para depuración
         console.log('Verificando acceso a resultados:', {
@@ -90,17 +90,17 @@ const verificarAccesoPorEmpresaId = async (req, res, next) => {
         }
 
         // Buscar empresa y verificar que coincida con el ID
+        const codigoNormalizado = codigoAccesoResultados.toUpperCase();
         const empresa = await Empresa.findOne({
             _id: empresaId,
-            nombreEmpresa: nombreEmpresa.trim(),
-            codigoAccesoResultados: codigoAccesoResultados.trim()
+            nombreEmpresa: { $regex: new RegExp(`^${escapeRegex(nombreEmpresa)}$`, 'i') }
         });
 
-        if (!empresa) {
+        if (!empresa || String(empresa.codigoAccesoResultados || '').toUpperCase() !== codigoNormalizado) {
             console.log('Error: Empresa no encontrada o credenciales no coinciden', {
                 empresaId,
-                nombreEmpresa: nombreEmpresa.trim(),
-                codigoAccesoResultados: codigoAccesoResultados.trim()
+                nombreEmpresa,
+                codigoAccesoResultados
             });
             
             // Buscar si existe la empresa con ese ID pero credenciales diferentes
@@ -137,4 +137,8 @@ module.exports = {
     verificarAccesoResultados,
     verificarAccesoPorEmpresaId
 };
+
+function escapeRegex(value = '') {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 

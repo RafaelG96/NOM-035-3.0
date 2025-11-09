@@ -36,18 +36,33 @@ function Intermedio() {
   const handleEmpleadoSubmit = async (e) => {
     e.preventDefault()
     if (isLocked) return
+
+    const nombreEmpresa = formData.empresaNombre.trim()
+    const claveAcceso = formData.claveAcceso.trim()
+
+    if (!/^\d{6}$/.test(claveAcceso)) {
+      setErrorInfo('La clave de acceso debe contener exactamente 6 dígitos numéricos.')
+      return
+    }
+
+    if (!nombreEmpresa) {
+      setErrorInfo('Ingrese el nombre de la empresa para continuar.')
+      return
+    }
+
     setLoading(true)
+    setErrorInfo(null)
 
     try {
       const response = await empresaAPI.verifyClave({
-        nombreEmpresa: formData.empresaNombre,
-        clave: formData.claveAcceso
+        nombreEmpresa,
+        clave: claveAcceso
       })
 
       if (response.data.success) {
         // Guardar datos en localStorage
         localStorage.setItem('empresaId', response.data.empresaId)
-        localStorage.setItem('empresaNombre', formData.empresaNombre)
+        localStorage.setItem('empresaNombre', nombreEmpresa)
         localStorage.setItem('tipoFormulario', response.data.tipoFormulario || 'basico')
         setErrorInfo(null)
         setLockoutSeconds(0)
@@ -180,8 +195,10 @@ function Intermedio() {
                         id="empresaNombre" 
                         required
                         value={formData.empresaNombre}
-                        onChange={(e) => setFormData({...formData, empresaNombre: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, empresaNombre: e.target.value })}
                         autoFocus
+                        disabled={loading || isLocked}
+                        placeholder="Ingrese el nombre registrado"
                       />
                     </div>
                     <div className="mb-3">
@@ -192,8 +209,19 @@ function Intermedio() {
                         id="claveAcceso" 
                         required
                         value={formData.claveAcceso}
-                        onChange={(e) => setFormData({...formData, claveAcceso: e.target.value})}
+                        onChange={(e) => {
+                          const soloDigitos = e.target.value.replace(/\D/g, '').slice(0, 6)
+                          setFormData({ ...formData, claveAcceso: soloDigitos })
+                        }}
+                        inputMode="numeric"
+                        maxLength={6}
+                        pattern="\d{6}"
+                        placeholder="Ingrese 6 dígitos"
+                        disabled={loading || isLocked}
                       />
+                      <small className="form-text text-muted">
+                        La clave debe tener exactamente 6 dígitos (0-9).
+                      </small>
                     </div>
                   </div>
                   <div className="modal-footer">
