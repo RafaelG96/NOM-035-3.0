@@ -115,66 +115,116 @@ function TraumaticQuestionForm({ questions, onSubmit, loading = false }) {
     'IV': 'Sección IV: Afectación (durante el último mes)'
   }
 
+  const sectionDetails = {
+    'I': {
+      title: sectionTitles['I'],
+      description: 'Marca "Sí" si has vivido alguno de los eventos listados con motivo de tu trabajo. Si respondes "No" a todos, no es necesario continuar con las secciones siguientes.',
+      color: 'primary',
+      icon: 'exclamation-octagon'
+    },
+    'II': {
+      title: sectionTitles['II'],
+      description: 'Responde únicamente si marcaste al menos un "Sí" en la Sección I. Se refiere a recuerdos recurrentes del acontecimiento durante el último mes.',
+      color: 'secondary',
+      icon: 'clock-history'
+    },
+    'III': {
+      title: sectionTitles['III'],
+      description: 'Responde si has tratado de evitar sentimientos, actividades o lugares que te recuerdan el acontecimiento.',
+      color: 'secondary',
+      icon: 'slash-circle'
+    },
+    'IV': {
+      title: sectionTitles['IV'],
+      description: 'Indica si has tenido afectaciones recientes relacionadas con el acontecimiento.',
+      color: 'secondary',
+      icon: 'heart-pulse'
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit}>
-      <div className="alert alert-info mb-4">
-        <p className="mb-0">
-          <i className="bi bi-info-circle me-2"></i>
-          Marque con "Sí" o "No" según corresponda a cada pregunta. Si todas las respuestas en la Sección I son "No", no es necesario completar las demás secciones.
-        </p>
-      </div>
-
       {Object.keys(questionsBySection).map((section) => {
+        const detail = sectionDetails[section] || {}
         const sectionQuestions = questionsBySection[section]
         const isVisible = showSections[section]
-        
+
         return (
-          <div key={section} className={`mb-4 ${!isVisible ? 'd-none' : ''}`}>
-            <h5 className="mb-3 text-primary border-bottom pb-2">
-              {sectionTitles[section]}
-            </h5>
-            
-            {sectionQuestions.map((question) => (
-              <div key={question.id} className="card mb-3">
-                <div className="card-body">
-                  <label className="form-label fw-bold mb-3 d-block">
-                    {question.number}. {question.text}
-                    {question.required && <span className="text-danger"> *</span>}
-                  </label>
-                  <div className="btn-group" role="group">
-                    {options.map(opt => (
-                      <div key={opt.value}>
-                        <input
-                          className="btn-check"
-                          type="radio"
-                          name={question.id}
-                          id={`${question.id}-${opt.value}`}
-                          value={opt.value}
-                          checked={formData[question.id] === opt.value}
-                          onChange={(e) => handleChange(question.id, e.target.value)}
-                          required={question.required && isVisible}
-                          autoComplete="off"
-                        />
-                        <label 
-                          className={`btn btn-outline-${opt.value === 'Sí' ? 'success' : 'danger'}`}
-                          htmlFor={`${question.id}-${opt.value}`}
-                        >
-                          <i className={`bi bi-${opt.value === 'Sí' ? 'check-circle' : 'x-circle'} me-1`}></i>
-                          {opt.label}
-                        </label>
+          <div key={section} className="mb-4">
+            <div className={`card border-${detail.color || 'primary'} shadow-sm`}>
+              <div className={`card-header bg-${detail.color || 'primary'} text-white d-flex align-items-center justify-content-between`}>
+                <div>
+                  <h5 className="mb-1">
+                    <i className={`bi bi-${detail.icon || 'info-circle'} me-2`}></i>
+                    {detail.title}
+                  </h5>
+                  {detail.description && (
+                    <p className="mb-0 small text-white-75">
+                      {detail.description}
+                    </p>
+                  )}
+                </div>
+                <span className={`badge ${isVisible ? 'bg-light text-dark' : 'bg-dark'}`}>
+                  {isVisible ? 'Disponible' : 'Completa la sección anterior'}
+                </span>
+              </div>
+              <div className="card-body">
+                {isVisible ? (
+                  <div className="list-group list-group-flush">
+                    {sectionQuestions.map((question) => (
+                      <div key={question.id} className="list-group-item px-0">
+                        <div className="row align-items-center">
+                          <div className="col-md-9">
+                            <label className="fw-semibold mb-2 d-block">
+                              {question.number}. {question.text}
+                              {question.required && <span className="text-danger"> *</span>}
+                            </label>
+                          </div>
+                          <div className="col-md-3">
+                            <div className="btn-group w-100" role="group">
+                              {options.map(opt => (
+                                <div key={opt.value} className="flex-grow-1">
+                                  <input
+                                    className="btn-check"
+                                    type="radio"
+                                    name={question.id}
+                                    id={`${question.id}-${opt.value}`}
+                                    value={opt.value}
+                                    checked={formData[question.id] === opt.value}
+                                    onChange={(e) => handleChange(question.id, e.target.value)}
+                                    required={question.required && isVisible}
+                                    autoComplete="off"
+                                  />
+                                  <label 
+                                    className={`btn w-100 ${opt.value === 'Sí' ? 'btn-outline-success' : 'btn-outline-danger'}`}
+                                    htmlFor={`${question.id}-${opt.value}`}
+                                  >
+                                    <i className={`bi bi-${opt.value === 'Sí' ? 'check-circle' : 'x-circle'} me-1`}></i>
+                                    {opt.label}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        {errors[question.id] && (
+                          <div className="text-danger small mt-2">{errors[question.id]}</div>
+                        )}
                       </div>
                     ))}
                   </div>
-                  {errors[question.id] && (
-                    <div className="text-danger small mt-2">{errors[question.id]}</div>
-                  )}
-                </div>
+                ) : (
+                  <div className="alert alert-light border mb-0">
+                    <i className="bi bi-info-circle me-2"></i>
+                    Completa la Sección I con al menos una respuesta "Sí" para habilitar esta sección.
+                  </div>
+                )}
               </div>
-            ))}
+            </div>
           </div>
         )
       })}
-      
+
       <div className="d-flex justify-content-between mt-4">
         <button 
           type="button"

@@ -8,7 +8,8 @@ function Traumaticos() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [empresaNombre, setEmpresaNombre] = useState('')
-  const [showCompanyForm, setShowCompanyForm] = useState(true)
+  const [showCompanyModal, setShowCompanyModal] = useState(true)
+  const [companyInput, setCompanyInput] = useState('')
   const [feedback, setFeedback] = useState({
     show: false,
     title: '',
@@ -65,15 +66,19 @@ function Traumaticos() {
   useEffect(() => {
     const storedEmpresaNombre = localStorage.getItem('empresaNombre')
     if (storedEmpresaNombre && storedEmpresaNombre.trim().length > 0) {
-      setEmpresaNombre(storedEmpresaNombre)
-      setShowCompanyForm(false)
+      const nombre = storedEmpresaNombre.trim()
+      setEmpresaNombre(nombre)
+      setCompanyInput(nombre)
+      setShowCompanyModal(false)
+    } else {
+      setShowCompanyModal(true)
     }
   }, [])
 
-  const handleCompanySubmit = (e) => {
+  const handleCompanyModalSubmit = (e) => {
     e.preventDefault()
-    const nombre = e.target.companyName.value.trim()
-    if (nombre && nombre.length >= 2) {
+    const nombre = companyInput.trim()
+    if (nombre.length >= 2) {
       setEmpresaNombre(nombre)
       localStorage.setItem('empresaNombre', nombre)
       setFeedback({
@@ -84,7 +89,7 @@ function Traumaticos() {
         autoClose: 2500,
         afterClose: null
       })
-      setShowCompanyForm(false)
+      setShowCompanyModal(false)
     } else {
       setFeedback({
         show: true,
@@ -95,6 +100,21 @@ function Traumaticos() {
         afterClose: null
       })
     }
+  }
+
+  const handleContinueWithoutCompany = () => {
+    setEmpresaNombre('')
+    setCompanyInput('')
+    localStorage.removeItem('empresaNombre')
+    setFeedback({
+      show: true,
+      title: 'Continuación sin empresa',
+      message: 'Tus respuestas se guardarán como "Sin especificar". Puedes agregar el nombre más adelante.',
+      theme: 'info',
+      autoClose: 2500,
+      afterClose: null
+    })
+    setShowCompanyModal(false)
   }
 
   const handleSubmit = async (formData) => {
@@ -132,13 +152,27 @@ function Traumaticos() {
       const response = await traumaAPI.create(data)
       
       if (response.data && response.data.success) {
+        const recomendaciones = response.data.recomendaciones || []
+        const mensaje = [
+          'Tus respuestas se enviaron correctamente.',
+          'Recuerda acercarte a tu área de seguridad y salud laboral o a un profesional externo para recibir acompañamiento.',
+          recomendaciones.length > 0 ? 'Recomendaciones:' : null,
+          ...recomendaciones.map((rec) => `• ${rec}`)
+        ].filter(Boolean).join('\n')
+
         setFeedback({
           show: true,
           title: '¡Gracias!',
-          message: 'Tus respuestas se enviaron correctamente. Serás redirigido a los resultados.',
+          message: mensaje,
           theme: 'success',
-          autoClose: 2500,
-          afterClose: () => navigate('/resultados-traumaticos')
+          autoClose: 0,
+          afterClose: () => {
+            setEmpresaNombre('')
+            setCompanyInput('')
+            localStorage.removeItem('empresaNombre')
+            setShowCompanyModal(true)
+            navigate('/resultados-traumaticos')
+          }
         })
       } else {
         throw new Error('No se recibió confirmación del servidor')
@@ -168,6 +202,68 @@ function Traumaticos() {
         autoClose={feedback.autoClose}
         onClose={handleFeedbackClose}
       />
+      {showCompanyModal && (
+        <>
+          <div className="modal-backdrop fade show" style={{ zIndex: 1080 }}></div>
+          <div
+            className="modal fade show"
+            style={{ display: 'block', zIndex: 1090 }}
+            tabIndex="-1"
+            aria-modal="true"
+            role="dialog"
+          >
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header bg-primary text-white">
+                  <h5 className="modal-title mb-0">
+                    <i className="bi bi-building me-2"></i>
+                    ¿Para qué empresa respondes?
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close btn-close-white"
+                    onClick={() => navigate('/')}
+                    aria-label="Cerrar"
+                  ></button>
+                </div>
+                <form onSubmit={handleCompanyModalSubmit}>
+                  <div className="modal-body">
+                    <p className="text-muted small">
+                  El nombre de la empresa es opcional, pero facilita dar seguimiento a los resultados y
+                  brindar apoyo oportuno a la organización. Si decides no continuar, haz clic en el botón de cerrar en la esquina superior derecha.
+                    </p>
+                    <label htmlFor="companyNameModal" className="form-label fw-semibold">
+                      Nombre de la empresa
+                    </label>
+                    <input
+                      id="companyNameModal"
+                      type="text"
+                      className="form-control"
+                      value={companyInput}
+                      onChange={(e) => setCompanyInput(e.target.value)}
+                      placeholder="Ej. Empresa XYZ"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="modal-footer">
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary"
+                      onClick={handleContinueWithoutCompany}
+                    >
+                      Continuar sin nombre
+                    </button>
+                    <button type="submit" className="btn btn-primary">
+                      Guardar y continuar
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
       <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
         <h1 className="mb-0">Formulario de Eventos Traumáticos</h1>
         <div className="d-flex align-items-center gap-2">
@@ -177,7 +273,10 @@ function Traumaticos() {
           <button
             type="button"
             className="btn btn-sm btn-outline-primary"
-            onClick={() => setShowCompanyForm(true)}
+            onClick={() => {
+              setCompanyInput(empresaNombre)
+              setShowCompanyModal(true)
+            }}
           >
             <i className="bi bi-pencil-square me-1"></i>
             {empresaNombre ? 'Cambiar' : 'Agregar'} nombre
@@ -198,60 +297,8 @@ function Traumaticos() {
             </p>
           </div>
 
-          {/* Formulario de identificación de empresa (solo si no hay nombre) */}
-          {showCompanyForm && (
-            <div className="card border-primary mb-4">
-              <div className="card-header bg-primary text-white">
-                <h5 className="mb-0">
-                  <i className="bi bi-building me-2"></i>
-                  Identificación de Empresa (Opcional)
-                </h5>
-              </div>
-              <div className="card-body">
-                <form onSubmit={handleCompanySubmit}>
-                  <div className="mb-3">
-                    <label htmlFor="companyName" className="form-label">
-                      Nombre de la empresa <span className="text-muted">(opcional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="companyName"
-                      name="companyName"
-                      defaultValue={empresaNombre}
-                      placeholder="Ingrese el nombre de su empresa (opcional)"
-                    />
-                    <small className="form-text text-muted">
-                      <i className="bi bi-info-circle me-1"></i>
-                      El nombre de la empresa es opcional pero recomendado para poder ver y filtrar los resultados posteriormente.
-                      Puede continuar sin proporcionarlo si lo desea.
-                    </small>
-                  </div>
-                  <div className="d-flex gap-2">
-                    <button type="submit" className="btn btn-primary">
-                      <i className="bi bi-check-circle me-2"></i>
-                      Continuar con nombre
-                    </button>
-                    <button 
-                      type="button" 
-                      className="btn btn-outline-secondary"
-                      onClick={() => {
-                        setEmpresaNombre('')
-                        localStorage.removeItem('empresaNombre')
-                        setShowCompanyForm(false)
-                      }}
-                    >
-                      <i className="bi bi-arrow-right me-2"></i>
-                      Continuar sin nombre
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-
-          {/* Formulario de preguntas (siempre disponible, nombre de empresa es opcional) */}
-          {!showCompanyForm && (
+          {/* Formulario de preguntas (solo disponible cuando se cierra el modal) */}
+          {!showCompanyModal && (
             <TraumaticQuestionForm 
               questions={questions} 
               onSubmit={handleSubmit}
