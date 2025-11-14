@@ -45,9 +45,23 @@ function RegistroEmpresa() {
     setLoading(true)
 
     const cantidadEmpleados = parseInt(formData.cantidadEmpleados)
+    const claveValida = /^\d{6}$/.test(formData.clave)
+    const codigoValido = /^[A-Za-z0-9]{8}$/.test(formData.codigoAccesoResultados)
     
-    if (!formData.nombreEmpresa || !formData.clave || !formData.codigoAccesoResultados || cantidadEmpleados <= 0) {
+    if (!formData.nombreEmpresa || Number.isNaN(cantidadEmpleados) || cantidadEmpleados <= 0) {
       alert('Por favor complete todos los campos correctamente')
+      setLoading(false)
+      return
+    }
+
+    if (!claveValida) {
+      alert('La clave de acceso para empleados debe contener exactamente 6 dígitos numéricos.')
+      setLoading(false)
+      return
+    }
+
+    if (!codigoValido) {
+      alert('El código de acceso a resultados debe contener exactamente 8 caracteres alfanuméricos.')
       setLoading(false)
       return
     }
@@ -170,10 +184,16 @@ function RegistroEmpresa() {
                     className="form-control form-control-lg" 
                     id="clave" 
                     required
+                    inputMode="numeric"
+                    pattern="[0-9]{6}"
+                    maxLength={6}
                     value={formData.clave}
-                    onChange={(e) => setFormData({...formData, clave: e.target.value})}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 6)
+                      setFormData({...formData, clave: value})
+                    }}
                   />
-                  <small className="form-text text-muted">Clave para que los empleados accedan al formulario</small>
+                  <small className="form-text text-muted">Ingrese 6 dígitos numéricos para que los empleados accedan al formulario.</small>
                 </div>
 
                 <div className="mb-4">
@@ -185,10 +205,15 @@ function RegistroEmpresa() {
                     className="form-control form-control-lg" 
                     id="codigo-acceso-resultados" 
                     required
+                    pattern="[A-Za-z0-9]{8}"
+                    maxLength={8}
                     value={formData.codigoAccesoResultados}
-                    onChange={(e) => setFormData({...formData, codigoAccesoResultados: e.target.value})}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8)
+                      setFormData({...formData, codigoAccesoResultados: value})
+                    }}
                   />
-                  <small className="form-text text-muted">Código seguro para acceder a los resultados. Guárdelo en un lugar seguro.</small>
+                  <small className="form-text text-muted">Utilice 8 caracteres alfanuméricos. Guárdelo en un lugar seguro.</small>
                 </div>
                 
                 <div className="d-grid mt-4">
@@ -235,7 +260,6 @@ function RegistroEmpresa() {
             onClick={() => {
               setShowModal(false)
               setModalData(null)
-              navigate('/intermedio')
             }}
             style={{ zIndex: 1040 }}
           ></div>
@@ -259,7 +283,6 @@ function RegistroEmpresa() {
                     onClick={() => {
                       setShowModal(false)
                       setModalData(null)
-                      navigate('/intermedio')
                     }}
                     aria-label="Cerrar"
                   ></button>
@@ -273,6 +296,12 @@ function RegistroEmpresa() {
                       <i className="bi bi-building me-2"></i>Detalles de la Empresa
                     </div>
                     <div className="card-body">
+                      <div className="alert alert-warning d-flex align-items-start" role="alert">
+                        <i className="bi bi-exclamation-triangle-fill me-2 mt-1"></i>
+                        <div>
+                          <strong>Importante:</strong> después de guardar, estos datos no se podrán modificar. Verifique que toda la información sea correcta antes de continuar.
+                        </div>
+                      </div>
                       <div className="row">
                         <div className="col-md-6 mb-2">
                           <small className="text-muted">Nombre</small>
@@ -315,6 +344,16 @@ function RegistroEmpresa() {
                 <div className="modal-footer">
                   <button 
                     type="button" 
+                    className="btn btn-outline-secondary"
+                    onClick={() => {
+                      setShowModal(false)
+                      setModalData(null)
+                    }}
+                  >
+                    Regresar y Editar
+                  </button>
+                  <button 
+                    type="button" 
                     className="btn btn-primary"
                     onClick={() => {
                       setShowModal(false)
@@ -322,7 +361,7 @@ function RegistroEmpresa() {
                       navigate('/intermedio')
                     }}
                   >
-                    Aceptar
+                    Confirmar y Continuar
                   </button>
                 </div>
               </div>

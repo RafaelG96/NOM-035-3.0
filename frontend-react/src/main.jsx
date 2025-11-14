@@ -6,11 +6,14 @@ import 'bootstrap-icons/font/bootstrap-icons.css'
 import './index.css'
 import './utils/debug.js' // Cargar utilidades de debug
 import App from './App.jsx'
+import { FormLockProvider } from './context/FormLockContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
+      <FormLockProvider>
+        <App />
+      </FormLockProvider>
     </BrowserRouter>
   </StrictMode>,
 )

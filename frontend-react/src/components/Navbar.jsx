@@ -1,14 +1,32 @@
 import { Link } from 'react-router-dom'
 import { useState } from 'react'
+import { useFormLock } from '../context/FormLockContext.jsx'
 
 function Navbar() {
   const [showModal, setShowModal] = useState(false)
+  const { isLocked, lockMessage } = useFormLock()
+
+  const handleProtectedClick = (event, callback) => {
+    if (isLocked) {
+      event.preventDefault()
+      window.alert(lockMessage || 'Completa y envía el formulario antes de salir.')
+      return
+    }
+
+    if (callback) {
+      callback()
+    }
+  }
 
   return (
     <>
       <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
         <div className="container">
-          <Link className="navbar-brand d-flex align-items-center" to="/">
+          <Link 
+            className="navbar-brand d-flex align-items-center" 
+            to="/"
+            onClick={(event) => handleProtectedClick(event)}
+          >
             <img 
               src="https://cdn-icons-png.flaticon.com/512/1570/1570887.png" 
               alt="Logo" 
@@ -29,29 +47,60 @@ function Navbar() {
           <div className="collapse navbar-collapse" id="navbarNav">
             <ul className="navbar-nav ms-auto">
               <li className="nav-item">
-                <a className="nav-link" href="#que-es">¿Qué es?</a>
-              </li>
-              <li className="nav-item">
-                <a className="nav-link" href="#objetivo">Objetivo</a>
-              </li>
-              <li className="nav-item">
-                <a className="nav-link" href="#proteccion">Protección de datos</a>
-              </li>
-              <li className="nav-item">
-                <a className="nav-link" href="#implementacion">Implementación</a>
+                <a 
+                  className={`nav-link ${isLocked ? 'disabled opacity-75' : ''}`} 
+                  href="#que-es"
+                  onClick={(event) => handleProtectedClick(event)}
+                >
+                  ¿Qué es?
+                </a>
               </li>
               <li className="nav-item">
                 <a 
-                  className="nav-link" 
+                  className={`nav-link ${isLocked ? 'disabled opacity-75' : ''}`} 
+                  href="#objetivo"
+                  onClick={(event) => handleProtectedClick(event)}
+                >
+                  Objetivo
+                </a>
+              </li>
+              <li className="nav-item">
+                <a 
+                  className={`nav-link ${isLocked ? 'disabled opacity-75' : ''}`} 
+                  href="#proteccion"
+                  onClick={(event) => handleProtectedClick(event)}
+                >
+                  Protección de datos
+                </a>
+              </li>
+              <li className="nav-item">
+                <a 
+                  className={`nav-link ${isLocked ? 'disabled opacity-75' : ''}`} 
+                  href="#implementacion"
+                  onClick={(event) => handleProtectedClick(event)}
+                >
+                  Implementación
+                </a>
+              </li>
+              <li className="nav-item">
+                <a 
+                  className={`nav-link ${isLocked ? 'disabled opacity-75' : ''}`} 
                   href="#" 
                   onClick={(e) => {
-                    e.preventDefault()
-                    setShowModal(true)
+                    handleProtectedClick(e, () => setShowModal(true))
                   }}
                 >
                   Resultados
                 </a>
               </li>
+              {isLocked && (
+                <li className="nav-item ms-lg-3">
+                  <span className="nav-link text-warning d-flex align-items-center">
+                    <i className="bi bi-lock-fill me-2"></i>
+                    Formulario en progreso
+                  </span>
+                </li>
+              )}
             </ul>
           </div>
         </div>

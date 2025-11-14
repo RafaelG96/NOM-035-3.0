@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { traumaAPI } from '../services/api'
 import TraumaticQuestionForm from '../components/TraumaticQuestionForm'
 import FeedbackModal from '../components/FeedbackModal'
+import { useFormLock } from '../context/FormLockContext.jsx'
 
 function Traumaticos() {
   const navigate = useNavigate()
+  const { lockForm, unlockForm } = useFormLock()
   const [loading, setLoading] = useState(false)
   const [empresaNombre, setEmpresaNombre] = useState('')
   const [showCompanyModal, setShowCompanyModal] = useState(true)
@@ -62,6 +64,13 @@ function Traumaticos() {
     { id: 'pregunta19', number: 19, text: '¿Ha estado nervioso o constantemente en alerta?', required: true, section: 'IV' },
     { id: 'pregunta20', number: 20, text: '¿Se ha sobresaltado fácilmente por cualquier cosa?', required: true, section: 'IV' }
   ]
+
+  useEffect(() => {
+    lockForm('Completa y envía el cuestionario antes de abandonar la página.')
+    return () => {
+      unlockForm()
+    }
+  }, [lockForm, unlockForm])
 
   useEffect(() => {
     const storedEmpresaNombre = localStorage.getItem('empresaNombre')
@@ -167,6 +176,7 @@ function Traumaticos() {
           theme: 'success',
           autoClose: 0,
           afterClose: () => {
+            unlockForm()
             setEmpresaNombre('')
             setCompanyInput('')
             localStorage.removeItem('empresaNombre')

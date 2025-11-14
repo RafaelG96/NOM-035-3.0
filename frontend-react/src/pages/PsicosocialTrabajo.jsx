@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { psicosocialAPI } from '../services/api'
 import QuestionForm from '../components/QuestionForm'
 import FeedbackModal from '../components/FeedbackModal'
+import { useFormLock } from '../context/FormLockContext.jsx'
 
 function PsicosocialTrabajo() {
   const navigate = useNavigate()
+  const { lockForm, unlockForm } = useFormLock()
   const [loading, setLoading] = useState(false)
   const [empresaId, setEmpresaId] = useState(null)
   const [empresaNombre, setEmpresaNombre] = useState('')
@@ -82,6 +84,13 @@ function PsicosocialTrabajo() {
     { id: 'pregunta45', number: 45, text: 'Dificultan el logro de los resultados del trabajo', required: true, conditional: 'esJefe' },
     { id: 'pregunta46', number: 46, text: 'Ignoran las sugerencias para mejorar su trabajo', required: true, conditional: 'esJefe' }
   ]
+
+  useEffect(() => {
+    lockForm('Completa y envía el cuestionario antes de abandonar la página.')
+    return () => {
+      unlockForm()
+    }
+  }, [lockForm, unlockForm])
 
   useEffect(() => {
     const storedEmpresaId = localStorage.getItem('empresaId')
@@ -189,6 +198,7 @@ function PsicosocialTrabajo() {
       }
 
       await psicosocialAPI.trabajo(data)
+      unlockForm()
       setFeedback({
         show: true,
         title: '¡Gracias!',
