@@ -14,12 +14,18 @@ const empresaSchema = new mongoose.Schema({
     clave: {
         type: String,
         required: [true, 'La clave es requerida'],
-        trim: true
+        trim: true,
+        minlength: [6, 'La clave debe tener exactamente 6 dígitos'],
+        maxlength: [6, 'La clave debe tener exactamente 6 dígitos'],
+        match: [/^\d{6}$/, 'La clave debe contener solo números y tener 6 caracteres']
     },
     codigoAccesoResultados: {
         type: String,
         required: [true, 'El código de acceso a resultados es requerido'],
-        trim: true
+        trim: true,
+        minlength: [8, 'El código de acceso a resultados debe tener 8 caracteres alfanuméricos'],
+        maxlength: [8, 'El código de acceso a resultados debe tener 8 caracteres alfanuméricos'],
+        match: [/^[A-Za-z0-9]{8}$/, 'El código de acceso a resultados debe ser alfanumérico y tener 8 caracteres']
     },
     muestraRepresentativa: {
         type: Number,

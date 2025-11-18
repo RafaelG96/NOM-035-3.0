@@ -317,11 +317,6 @@ function ResultadosTrabajo() {
   }
 
   const obtenerNivelPorCategoriaTrabajo = (nombre, puntaje) => {
-                                <p className="text-muted small mb-1">
-                                  {(vistaActiva[index] || 'categorias') === 'categorias'
-                                    ? elInfoTooltipsTrabajo.infoCategoriasTrabajo?.descripcion
-                                    : ''}
-                                </p>
     const rangos = {
       'Ambiente de trabajo': [3, 5, 7, 9],
       'Factores propios de la actividad': [10, 20, 30, 40],
@@ -409,6 +404,26 @@ function ResultadosTrabajo() {
     return totalEncuestas >= totalEmpleados
   }
 
+  // Función helper para agregar texto con soporte UTF-8
+  const addText = (doc, text, x, y) => {
+    try {
+      // Asegurar que el texto sea una cadena válida y esté correctamente codificado
+      const textStr = String(text || '').trim()
+      if (!textStr) return
+      
+      // jsPDF v3 maneja UTF-8 automáticamente, solo necesitamos asegurar que el texto esté bien formado
+      doc.text(textStr, x, y)
+    } catch (error) {
+      console.error('Error al agregar texto al PDF:', error)
+      // Fallback: intentar con texto sin caracteres especiales
+      try {
+        doc.text(String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, ''), x, y)
+      } catch (e) {
+        console.error('Error en fallback:', e)
+      }
+    }
+  }
+
   // Función para descargar PDF
   const handleDescargarPDF = () => {
     if (!verificarFormulariosCompletos()) {
@@ -421,75 +436,169 @@ function ResultadosTrabajo() {
       return
     }
 
-    const { empresa, resultados: respuestas } = resultados.data
-    const doc = new jsPDF()
+    try {
+      const { empresa, resultados: respuestas } = resultados.data
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      })
 
-    // Calcular estadísticas
-    const totalEncuestas = respuestas.length
-    const totalPuntaje = respuestas.reduce((sum, respuesta) => sum + (respuesta.puntajeTotal || 0), 0)
-    const promedioPuntaje = totalEncuestas > 0 ? (totalPuntaje / totalEncuestas).toFixed(2) : 0
-    const nivelRiesgoGeneral = determinarNivelRiesgoGeneral(parseFloat(promedioPuntaje))
+      // Calcular estadísticas
+      const totalEncuestas = respuestas.length
+      const totalPuntaje = respuestas.reduce((sum, respuesta) => sum + (respuesta.puntajeTotal || 0), 0)
+      const promedioPuntaje = totalEncuestas > 0 ? (totalPuntaje / totalEncuestas).toFixed(2) : 0
+      const nivelRiesgoGeneral = determinarNivelRiesgoGeneral(parseFloat(promedioPuntaje))
 
-    // Título
-    doc.setFontSize(16)
-    doc.text('Resultados de Encuestas - Trabajo', 10, 10)
-
-    // Datos generales
-    doc.setFontSize(12)
-    let y = 20
-    doc.text(`Empresa: ${empresa?.nombreEmpresa || 'N/A'}`, 10, y)
-    y += 10
-    doc.text(`Total Encuestas: ${totalEncuestas}/${empresa?.cantidadEmpleados || 0}`, 10, y)
-    y += 10
-    doc.text(`Puntaje Promedio: ${promedioPuntaje}`, 10, y)
-    y += 10
-    doc.text(`Nivel de Riesgo: ${nivelRiesgoGeneral}`, 10, y)
-    y += 15
-
-    // Encuestas individuales
-    respuestas.forEach((respuesta, index) => {
-      if (y > 270) {
-        doc.addPage()
-        y = 10
+      // Función helper para dibujar línea
+      const drawLine = (x1, y1, x2, y2) => {
+        doc.setLineWidth(0.5)
+        doc.line(x1, y1, x2, y2)
       }
 
+      // Función helper para dibujar rectángulo
+      const drawRect = (x, y, width, height, fill = false) => {
+        if (fill) {
+          doc.setFillColor(240, 240, 240)
+          doc.rect(x, y, width, height, 'F')
+        }
+        doc.setDrawColor(200, 200, 200)
+        doc.setLineWidth(0.3)
+        doc.rect(x, y, width, height)
+      }
+
+      // Encabezado
+      doc.setFillColor(41, 128, 185)
+      doc.rect(0, 0, 210, 30, 'F')
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(18)
+      doc.setFont(undefined, 'bold')
+      const titleText = 'REPORTE DE RESULTADOS - TRABAJO'
+      const titleWidth = doc.getTextWidth(titleText)
+      addText(doc, titleText, (210 - titleWidth) / 2, 20)
+      
+      doc.setTextColor(0, 0, 0)
+      doc.setFont(undefined, 'normal')
+      let y = 40
+
+      // Información General en caja
+      drawRect(10, y, 190, 35, true)
       doc.setFontSize(14)
-      doc.text(`Encuesta ${index + 1}: ${formatDate(respuesta.createdAt)}`, 10, y)
-      y += 10
+      doc.setFont(undefined, 'bold')
+      addText(doc, 'INFORMACIÓN GENERAL', 15, y + 8)
+      
+      doc.setFontSize(10)
+      doc.setFont(undefined, 'normal')
+      y += 12
+      addText(doc, `Empresa: ${empresa?.nombreEmpresa || 'N/A'}`, 15, y)
+      addText(doc, `Total Encuestas: ${totalEncuestas}/${empresa?.cantidadEmpleados || 0}`, 110, y)
+      y += 7
+      addText(doc, `Puntaje Promedio: ${promedioPuntaje}`, 15, y)
+      addText(doc, `Nivel de Riesgo: ${nivelRiesgoGeneral}`, 110, y)
+      y += 7
+      const ultimaFecha = respuestas.reduce((latest, respuesta) => {
+        const fechaActual = new Date(respuesta.updatedAt || respuesta.createdAt)
+        return fechaActual > latest ? fechaActual : latest
+      }, new Date(0))
+      addText(doc, `Fecha de Actualización: ${formatDate(ultimaFecha)}`, 15, y)
+      
+      y += 20
 
-      doc.setFontSize(12)
-      doc.text(`Puntaje Total: ${respuesta.puntajeTotal || 0}`, 10, y)
-      y += 10
-      doc.text(`Nivel de Riesgo: ${respuesta.nivelRiesgo || 'Nulo o despreciable'}`, 10, y)
-      y += 10
+      // Encuestas individuales
+      respuestas.forEach((respuesta, idx) => {
+        if (y > 260) {
+          doc.addPage()
+          y = 20
+        }
 
-      // Puntajes por Categoría
-      doc.setFontSize(11)
-      doc.text('Puntajes por Categoría:', 10, y)
-      y += 8
-      if (respuesta.categorias && Array.isArray(respuesta.categorias)) {
-        respuesta.categorias.forEach((categoria) => {
-          doc.text(`- ${categoria.nombre}: ${categoria.puntaje}`, 15, y)
+        // Encabezado de encuesta
+        drawRect(10, y, 190, 25, true)
+        doc.setFontSize(12)
+        doc.setFont(undefined, 'bold')
+        addText(doc, `ENCUESTA ${idx + 1}`, 15, y + 8)
+        doc.setFontSize(10)
+        doc.setFont(undefined, 'normal')
+        addText(doc, `Fecha: ${formatDate(respuesta.createdAt)}`, 15, y + 16)
+        addText(doc, `Puntaje Total: ${respuesta.puntajeTotal || 0}`, 110, y + 16)
+        y += 30
+
+        // Puntajes por Categoría
+        doc.setFontSize(11)
+        doc.setFont(undefined, 'bold')
+        addText(doc, 'Puntajes por Categoría', 15, y)
+        y += 8
+        
+        if (respuesta.categorias && Array.isArray(respuesta.categorias) && respuesta.categorias.length > 0) {
+          // Encabezado de tabla
+          drawRect(15, y, 180, 6, true)
+          doc.setFontSize(9)
+          doc.setFont(undefined, 'bold')
+          addText(doc, 'Categoría', 18, y + 4.5)
+          addText(doc, 'Puntaje', 160, y + 4.5)
           y += 7
-        })
-      }
-
-      // Puntajes por Dominio
-      doc.text('Puntajes por Dominio:', 10, y)
-      y += 8
-      if (respuesta.dominios && Array.isArray(respuesta.dominios)) {
-        respuesta.dominios.forEach((dominio) => {
-          doc.text(`- ${dominio.nombre}: ${dominio.puntaje}`, 15, y)
+          
+          doc.setFont(undefined, 'normal')
+          respuesta.categorias.forEach((categoria) => {
+            if (y > 260) {
+              doc.addPage()
+              y = 20
+            }
+            drawRect(15, y, 180, 6, false)
+            addText(doc, categoria.nombre, 18, y + 4.5)
+            addText(doc, String(categoria.puntaje), 160, y + 4.5)
+            y += 7
+          })
+        } else {
+          addText(doc, 'No hay datos disponibles', 18, y)
           y += 7
-        })
-      }
+        }
+        
+        y += 5
 
-      y += 10
-    })
+        // Puntajes por Dominio
+        doc.setFontSize(11)
+        doc.setFont(undefined, 'bold')
+        addText(doc, 'Puntajes por Dominio', 15, y)
+        y += 8
+        
+        if (respuesta.dominios && Array.isArray(respuesta.dominios) && respuesta.dominios.length > 0) {
+          // Encabezado de tabla
+          drawRect(15, y, 180, 6, true)
+          doc.setFontSize(9)
+          doc.setFont(undefined, 'bold')
+          addText(doc, 'Dominio', 18, y + 4.5)
+          addText(doc, 'Puntaje', 160, y + 4.5)
+          y += 7
+          
+          doc.setFont(undefined, 'normal')
+          respuesta.dominios.forEach((dominio) => {
+            if (y > 260) {
+              doc.addPage()
+              y = 20
+            }
+            drawRect(15, y, 180, 6, false)
+            addText(doc, dominio.nombre, 18, y + 4.5)
+            addText(doc, String(dominio.puntaje), 160, y + 4.5)
+            y += 7
+          })
+        } else {
+          addText(doc, 'No hay datos disponibles', 18, y)
+          y += 7
+        }
 
-    // Guardar PDF
-    const nombreArchivo = `Resultados_Trabajo_${empresa?.nombreEmpresa?.replace(/[^a-zA-Z0-9]/g, '_') || 'Empresa'}_${new Date().toISOString().split('T')[0]}.pdf`
-    doc.save(nombreArchivo)
+        y += 10
+        // Línea separadora
+        drawLine(10, y, 200, y)
+        y += 5
+      })
+
+      // Guardar PDF
+      const nombreArchivo = `Resultados_Trabajo_${empresa?.nombreEmpresa?.replace(/[^a-zA-Z0-9]/g, '_') || 'Empresa'}_${new Date().toISOString().split('T')[0]}.pdf`
+      doc.save(nombreArchivo)
+    } catch (error) {
+      console.error('Error al generar PDF:', error)
+      alert('Error al generar el PDF. Por favor, intente nuevamente.')
+    }
   }
 
   // Función para descargar Excel
@@ -504,150 +613,213 @@ function ResultadosTrabajo() {
       return
     }
 
-    const { empresa, resultados: respuestas } = resultados.data
-    const wb = XLSX.utils.book_new()
-
-    // Calcular estadísticas
-    const totalEncuestas = respuestas.length
-    const totalPuntaje = respuestas.reduce((sum, respuesta) => sum + (respuesta.puntajeTotal || 0), 0)
-    const promedioPuntaje = totalEncuestas > 0 ? (totalPuntaje / totalEncuestas).toFixed(2) : 0
-    const nivelRiesgoGeneral = determinarNivelRiesgoGeneral(parseFloat(promedioPuntaje))
-    const ultimaFecha = respuestas.reduce((latest, respuesta) => {
-      const fechaActual = new Date(respuesta.updatedAt || respuesta.createdAt)
-      return fechaActual > latest ? fechaActual : latest
-    }, new Date(0))
-
-    // Hoja 1: Resumen General
-    const resumenData = [
-      ['REPORTE DE RESULTADOS - FORMULARIO PSICOSOCIAL TRABAJO'],
-      ['Empresa', empresa?.nombreEmpresa || 'N/A'],
-      ['Total Encuestas', totalEncuestas],
-      ['Total Empleados', empresa?.cantidadEmpleados || 0],
-      ['Puntaje Promedio', promedioPuntaje],
-      ['Nivel de Riesgo', nivelRiesgoGeneral],
-      ['Fecha de Actualización', formatDate(ultimaFecha)],
-      [],
-      ['RESUMEN DE ENCUESTAS']
-    ]
-
-    const wsResumen = XLSX.utils.aoa_to_sheet(resumenData)
-    XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen')
-
-    // Hoja 2: Respuestas por Encuesta
-    const respuestasData = [
-      ['ID Encuesta', 'Fecha', 'Puntaje Total', 'Nivel de Riesgo']
-    ]
-
-    respuestas.forEach((respuesta, index) => {
-      const fecha = formatDate(respuesta.createdAt)
-      respuestasData.push([
-        `Encuesta ${index + 1}`,
-        fecha,
-        respuesta.puntajeTotal || 0,
-        respuesta.nivelRiesgo || 'Nulo o despreciable'
-      ])
-    })
-
-    const wsRespuestas = XLSX.utils.aoa_to_sheet(respuestasData)
-    XLSX.utils.book_append_sheet(wb, wsRespuestas, 'Encuestas')
-
-    // Hoja 3: Puntajes por Categoría
-    const categoriasData = [
-      ['ID Encuesta', 'Fecha', 'Categoría', 'Puntaje', 'Nivel']
-    ]
-
-    respuestas.forEach((respuesta, index) => {
-      const fecha = formatDate(respuesta.createdAt)
-      const categorias = respuesta.categorias || []
+    try {
+      const { empresa, resultados: respuestas } = resultados.data
       
-      categorias.forEach((categoria) => {
-        const nivel = obtenerNivelPorCategoriaTrabajo(categoria.nombre, categoria.puntaje)
-        categoriasData.push([
-          `Encuesta ${index + 1}`,
+      if (!respuestas || !Array.isArray(respuestas) || respuestas.length === 0) {
+        alert('No hay respuestas para exportar.')
+        return
+      }
+
+      const wb = XLSX.utils.book_new()
+
+      // Calcular estadísticas
+      const totalEncuestas = respuestas.length
+      const totalPuntaje = respuestas.reduce((sum, respuesta) => sum + (respuesta.puntajeTotal || 0), 0)
+      const promedioPuntaje = totalEncuestas > 0 ? (totalPuntaje / totalEncuestas).toFixed(2) : 0
+      const nivelRiesgoGeneral = determinarNivelRiesgoGeneral(parseFloat(promedioPuntaje))
+      const ultimaFecha = respuestas.reduce((latest, respuesta) => {
+        const fechaActual = new Date(respuesta.updatedAt || respuesta.createdAt)
+        return fechaActual > latest ? fechaActual : latest
+      }, new Date(0))
+
+      // Hoja 1: Resumen General
+      const resumenData = [
+        ['REPORTE DE RESULTADOS - FORMULARIO PSICOSOCIAL TRABAJO'],
+        ['Empresa', empresa?.nombreEmpresa || 'N/A'],
+        ['Total Encuestas', totalEncuestas],
+        ['Total Empleados', empresa?.cantidadEmpleados || 0],
+        ['Puntaje Promedio', promedioPuntaje],
+        ['Nivel de Riesgo', nivelRiesgoGeneral],
+        ['Fecha de Actualización', formatDate(ultimaFecha)],
+        [],
+        ['RESUMEN DE ENCUESTAS']
+      ]
+
+      const wsResumen = XLSX.utils.aoa_to_sheet(resumenData)
+      XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen')
+
+      // Hoja 2: Respuestas por Encuesta
+      const respuestasData = [
+        ['ID Encuesta', 'Fecha', 'Puntaje Total', 'Nivel de Riesgo', 'Es Jefe', 'Servicio a Clientes']
+      ]
+
+      respuestas.forEach((respuesta, idx) => {
+        const fecha = formatDate(respuesta.createdAt || respuesta.updatedAt)
+        respuestasData.push([
+          `Encuesta ${idx + 1}`,
           fecha,
-          categoria.nombre,
-          categoria.puntaje,
-          nivel
+          respuesta.puntajeTotal || 0,
+          respuesta.nivelRiesgo || 'Nulo o despreciable',
+          respuesta.esJefe ? 'Sí' : 'No',
+          respuesta.servicioClientes ? 'Sí' : 'No'
         ])
       })
-    })
 
-    const wsCategorias = XLSX.utils.aoa_to_sheet(categoriasData)
-    XLSX.utils.book_append_sheet(wb, wsCategorias, 'Categorías')
+      const wsRespuestas = XLSX.utils.aoa_to_sheet(respuestasData)
+      XLSX.utils.book_append_sheet(wb, wsRespuestas, 'Encuestas')
 
-    // Hoja 4: Puntajes por Dominio
-    const dominiosData = [
-      ['ID Encuesta', 'Fecha', 'Dominio', 'Puntaje', 'Nivel']
-    ]
+      // Hoja 3: Puntajes por Categoría
+      const categoriasData = [
+        ['ID Encuesta', 'Fecha', 'Categoría', 'Puntaje', 'Nivel']
+      ]
 
-    respuestas.forEach((respuesta, index) => {
-      const fecha = formatDate(respuesta.createdAt)
-      const dominios = respuesta.dominios || []
-      
-      dominios.forEach((dominio) => {
-        const nivel = obtenerNivelPorDominioTrabajo(dominio.nombre, dominio.puntaje)
-        dominiosData.push([
-          `Encuesta ${index + 1}`,
-          fecha,
-          dominio.nombre,
-          dominio.puntaje,
-          nivel
-        ])
-      })
-    })
-
-    const wsDominios = XLSX.utils.aoa_to_sheet(dominiosData)
-    XLSX.utils.book_append_sheet(wb, wsDominios, 'Dominios')
-
-    // Hoja 5: Respuestas Detalladas por Pregunta
-    const preguntasData = [
-      ['ID Encuesta', 'Fecha', 'Pregunta', 'Respuesta', 'Valor Numérico']
-    ]
-
-    respuestas.forEach((respuesta, index) => {
-      const fecha = formatDate(respuesta.createdAt)
-      const preguntas = respuesta.preguntas || {}
-      
-      Object.entries(preguntas).forEach(([pregunta, respuestaPregunta]) => {
-        if (pregunta.startsWith('pregunta')) {
-          // Convertir valor a numérico
-          let valorNumerico = 0
-          if (typeof respuestaPregunta === 'boolean') {
-            valorNumerico = respuestaPregunta ? 1 : 0
-          } else if (typeof respuestaPregunta === 'number') {
-            valorNumerico = respuestaPregunta
-          } else if (typeof respuestaPregunta === 'string') {
-            const valoresMap = {
-              'Siempre': 0,
-              'Casi siempre': 1,
-              'Algunas veces': 2,
-              'Casi nunca': 3,
-              'Nunca': 4,
-              'Sí': 1,
-              'No': 0
-            }
-            valorNumerico = valoresMap[respuestaPregunta] !== undefined ? valoresMap[respuestaPregunta] : 0
-          }
-
-          preguntasData.push([
-            `Encuesta ${index + 1}`,
+      respuestas.forEach((respuesta, idx) => {
+        const fecha = formatDate(respuesta.createdAt || respuesta.updatedAt)
+        const categorias = respuesta.categorias || []
+        const encuestaId = `Encuesta ${idx + 1}`
+        
+        if (categorias.length === 0) {
+          categoriasData.push([
+            encuestaId,
             fecha,
-            pregunta.replace('pregunta', 'Pregunta '),
-            typeof respuestaPregunta === 'boolean' ? (respuestaPregunta ? 'Sí' : 'No') : respuestaPregunta,
-            valorNumerico
+            'Sin datos',
+            0,
+            'N/A'
           ])
+        } else {
+          categorias.forEach((categoria) => {
+            const nivel = obtenerNivelPorCategoriaTrabajo(categoria.nombre, categoria.puntaje)
+            categoriasData.push([
+              encuestaId,
+              fecha,
+              categoria.nombre,
+              categoria.puntaje,
+              nivel
+            ])
+          })
         }
       })
-    })
 
-    const wsPreguntas = XLSX.utils.aoa_to_sheet(preguntasData)
-    XLSX.utils.book_append_sheet(wb, wsPreguntas, 'Respuestas Detalladas')
+      const wsCategorias = XLSX.utils.aoa_to_sheet(categoriasData)
+      XLSX.utils.book_append_sheet(wb, wsCategorias, 'Categorías')
 
-    // Generar nombre de archivo
-    const nombreArchivo = `Resultados_Trabajo_${empresa?.nombreEmpresa?.replace(/[^a-zA-Z0-9]/g, '_') || 'Empresa'}_${new Date().toISOString().split('T')[0]}.xlsx`
+      // Hoja 4: Puntajes por Dominio
+      const dominiosData = [
+        ['ID Encuesta', 'Fecha', 'Dominio', 'Puntaje', 'Nivel']
+      ]
 
-    // Descargar el archivo
-    XLSX.writeFile(wb, nombreArchivo)
+      respuestas.forEach((respuesta, idx) => {
+        const fecha = formatDate(respuesta.createdAt || respuesta.updatedAt)
+        const dominios = respuesta.dominios || []
+        const encuestaId = `Encuesta ${idx + 1}`
+        
+        if (dominios.length === 0) {
+          dominiosData.push([
+            encuestaId,
+            fecha,
+            'Sin datos',
+            0,
+            'N/A'
+          ])
+        } else {
+          dominios.forEach((dominio) => {
+            const nivel = obtenerNivelPorDominioTrabajo(dominio.nombre, dominio.puntaje)
+            dominiosData.push([
+              encuestaId,
+              fecha,
+              dominio.nombre,
+              dominio.puntaje,
+              nivel
+            ])
+          })
+        }
+      })
+
+      const wsDominios = XLSX.utils.aoa_to_sheet(dominiosData)
+      XLSX.utils.book_append_sheet(wb, wsDominios, 'Dominios')
+
+      // Hoja 5: Respuestas Detalladas por Pregunta (LA MÁS IMPORTANTE)
+      const preguntasData = [
+        ['ID Encuesta', 'Fecha', 'Número de Pregunta', 'Pregunta', 'Respuesta', 'Valor Numérico']
+      ]
+
+      respuestas.forEach((respuesta, idx) => {
+        const fecha = formatDate(respuesta.createdAt || respuesta.updatedAt)
+        const preguntas = respuesta.preguntas || {}
+        const encuestaId = `Encuesta ${idx + 1}`
+        
+        if (Object.keys(preguntas).length === 0) {
+          preguntasData.push([
+            encuestaId,
+            fecha,
+            'N/A',
+            'No hay respuestas registradas',
+            'N/A',
+            0
+          ])
+        } else {
+          // Ordenar las preguntas por número
+          const preguntasOrdenadas = Object.entries(preguntas).sort((a, b) => {
+            const numA = parseInt(a[0].replace('pregunta', '')) || 0
+            const numB = parseInt(b[0].replace('pregunta', '')) || 0
+            return numA - numB
+          })
+          
+          preguntasOrdenadas.forEach(([preguntaKey, respuestaPregunta]) => {
+            if (preguntaKey.startsWith('pregunta')) {
+              const numeroPregunta = preguntaKey.replace('pregunta', '')
+              let valorNumerico = 0
+              let respuestaTexto = String(respuestaPregunta)
+              
+              // Convertir respuesta a valor numérico si es posible
+              if (typeof respuestaPregunta === 'boolean') {
+                valorNumerico = respuestaPregunta ? 1 : 0
+                respuestaTexto = respuestaPregunta ? 'Sí' : 'No'
+              } else if (typeof respuestaPregunta === 'number') {
+                valorNumerico = respuestaPregunta
+              } else if (typeof respuestaPregunta === 'string') {
+                const valoresMap = {
+                  'Siempre': 0,
+                  'Casi siempre': 1,
+                  'Algunas veces': 2,
+                  'Casi nunca': 3,
+                  'Nunca': 4,
+                  'Sí': 1,
+                  'No': 0,
+                  'si': 1,
+                  'no': 0
+                }
+                valorNumerico = valoresMap[respuestaPregunta] !== undefined ? valoresMap[respuestaPregunta] : 0
+              }
+
+              preguntasData.push([
+                encuestaId,
+                fecha,
+                numeroPregunta,
+                `Pregunta ${numeroPregunta}`,
+                respuestaTexto,
+                valorNumerico
+              ])
+            }
+          })
+        }
+      })
+
+      const wsPreguntas = XLSX.utils.aoa_to_sheet(preguntasData)
+      XLSX.utils.book_append_sheet(wb, wsPreguntas, 'Respuestas Detalladas')
+
+      // Generar nombre de archivo
+      const nombreArchivo = `Resultados_Trabajo_${empresa?.nombreEmpresa?.replace(/[^a-zA-Z0-9]/g, '_') || 'Empresa'}_${new Date().toISOString().split('T')[0]}.xlsx`
+
+      // Descargar el archivo
+      XLSX.writeFile(wb, nombreArchivo)
+      
+      console.log('Excel generado exitosamente:', nombreArchivo)
+    } catch (error) {
+      console.error('Error al generar Excel:', error)
+      alert('Error al generar el archivo Excel. Por favor, intente nuevamente. Error: ' + error.message)
+    }
   }
 
   // Mostrar login si no hay credenciales

@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { psicosocialAPI, empresaAPI } from '../services/api'
 import QuestionForm from '../components/QuestionForm'
 import FeedbackModal from '../components/FeedbackModal'
+import { useFormLock } from '../context/FormLockContext.jsx'
 
 function PsicosocialEntorno() {
   const navigate = useNavigate()
+  const { lockForm, unlockForm } = useFormLock()
   const [showLogin, setShowLogin] = useState(false)
   const [loading, setLoading] = useState(false)
   const [loginData, setLoginData] = useState({ nombreEmpresa: '', clave: '' })
@@ -108,6 +110,13 @@ function PsicosocialEntorno() {
     { id: 'pregunta71', number: 71, text: 'Cooperan poco cuando se necesita', required: false, conditional: 'esJefe' },
     { id: 'pregunta72', number: 72, text: 'Ignoran las sugerencias para mejorar su trabajo', required: false, conditional: 'esJefe' }
   ]
+
+  useEffect(() => {
+    lockForm('Completa y envía el cuestionario antes de abandonar la página.')
+    return () => {
+      unlockForm()
+    }
+  }, [lockForm, unlockForm])
 
   useEffect(() => {
     const storedEmpresaId = localStorage.getItem('empresaId')
@@ -246,6 +255,7 @@ function PsicosocialEntorno() {
       }
 
       await psicosocialAPI.entorno(data)
+      unlockForm()
       setFeedback({
         show: true,
         title: '¡Gracias!',

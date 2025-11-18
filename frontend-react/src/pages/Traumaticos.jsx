@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { traumaAPI } from '../services/api'
 import TraumaticQuestionForm from '../components/TraumaticQuestionForm'
 import FeedbackModal from '../components/FeedbackModal'
+import { useFormLock } from '../context/FormLockContext.jsx'
 
 function Traumaticos() {
   const navigate = useNavigate()
+  const { lockForm, unlockForm } = useFormLock()
   const [loading, setLoading] = useState(false)
   const [empresaNombre, setEmpresaNombre] = useState('')
   const [showCompanyModal, setShowCompanyModal] = useState(true)
@@ -62,6 +64,13 @@ function Traumaticos() {
     { id: 'pregunta19', number: 19, text: '¿Ha estado nervioso o constantemente en alerta?', required: true, section: 'IV' },
     { id: 'pregunta20', number: 20, text: '¿Se ha sobresaltado fácilmente por cualquier cosa?', required: true, section: 'IV' }
   ]
+
+  useEffect(() => {
+    lockForm('Completa y envía el cuestionario antes de abandonar la página.')
+    return () => {
+      unlockForm()
+    }
+  }, [lockForm, unlockForm])
 
   useEffect(() => {
     const storedEmpresaNombre = localStorage.getItem('empresaNombre')
@@ -165,13 +174,17 @@ function Traumaticos() {
           title: '¡Gracias!',
           message: mensaje,
           theme: 'success',
-          autoClose: 0,
+          autoClose: 3000,
           afterClose: () => {
+            unlockForm()
+            // Reiniciar el formulario y el nombre de empresa
             setEmpresaNombre('')
             setCompanyInput('')
             localStorage.removeItem('empresaNombre')
+            // Mostrar el modal nuevamente para ingresar un nuevo nombre
             setShowCompanyModal(true)
-            navigate('/resultados-traumaticos')
+            // No navegar automáticamente, permitir llenar otro cuestionario
+            // navigate('/resultados-traumaticos')
           }
         })
       } else {

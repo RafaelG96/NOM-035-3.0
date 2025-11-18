@@ -20,27 +20,24 @@ const securityConfig = {
   },
   
   // Configuración de CORS
+  // Permite peticiones desde cualquier origen (incluyendo aplicaciones móviles)
   cors: {
-    origin: [
-      'http://localhost:5500',      // Frontend HTML original (Live Server)
-      'http://127.0.0.1:5500',
-      'http://localhost:5173',       // Frontend React (Vite dev server - puerto por defecto)
-      'http://127.0.0.1:5173',
-      'http://localhost:5174',       // Frontend React (Vite dev server - puerto alternativo)
-      'http://127.0.0.1:5174'
-    ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    origin: true, // Permite cualquier origen (necesario para apps móviles)
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: [
       'Content-Type', 
       'Authorization', 
       'x-empresa-nombre',
       'x-codigo-acceso',
       'X-Empresa-Nombre',
-      'X-Codigo-Acceso'
+      'X-Codigo-Acceso',
+      'X-Requested-With',
+      'Accept',
+      'Origin'
     ],
     exposedHeaders: ['x-empresa-nombre', 'x-codigo-acceso'],
-    credentials: true,
-    maxAge: 86400 // 24 horas
+    credentials: true, // Permite cookies y headers de autenticación
+    maxAge: 86400 // 24 horas - tiempo de cache para preflight requests
   },
   
   // Configuración de Helmet
