@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import RegistroEmpresa from './pages/RegistroEmpresa'
@@ -14,20 +15,23 @@ import './App.css'
 
 function App() {
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/registro" element={<RegistroEmpresa />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/intermedio" element={<Intermedio />} />
-        <Route path="/psicosocial-entorno" element={<PsicosocialEntorno />} />
-        <Route path="/psicosocial-trabajo" element={<PsicosocialTrabajo />} />
-        <Route path="/traumaticos" element={<Traumaticos />} />
-        <Route path="/resultados-entorno" element={<ResultadosEntorno />} />
-        <Route path="/resultados-trabajo" element={<ResultadosTrabajo />} />
-        <Route path="/resultados-traumaticos" element={<ResultadosTraumaticos />} />
-      </Routes>
-    </Layout>
+    <>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/registro" element={<RegistroEmpresa />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/intermedio" element={<Intermedio />} />
+          <Route path="/psicosocial-entorno" element={<PsicosocialEntorno />} />
+          <Route path="/psicosocial-trabajo" element={<PsicosocialTrabajo />} />
+          <Route path="/traumaticos" element={<Traumaticos />} />
+          <Route path="/resultados-entorno" element={<ResultadosEntorno />} />
+          <Route path="/resultados-trabajo" element={<ResultadosTrabajo />} />
+          <Route path="/resultados-traumaticos" element={<ResultadosTraumaticos />} />
+        </Routes>
+      </Layout>
+      <SpeedInsights />
+    </>
   )
 }
 
